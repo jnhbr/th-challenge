@@ -1721,7 +1721,7 @@ function renderDuel(){
     ['Beste Woche',     sa.bestWeek, sb.bestWeek, 0]
   ];
   $('#duelBody').innerHTML = rows.map(([label, va, vb, dec]) => {
-    const f = v => dec ? (v ? round1(v).toString().replace('.', ',') : '–') : String(Math.round(v));
+    const f = v => dec ? (v ? String(round1(v)) : '–') : String(Math.round(v));   // Punkt wie im restlichen Tracker
     return '<tr><td>' + label + '</td>' +
       '<td' + (va > vb ? ' class="win"' : '') + '>' + f(va) + '</td>' +
       '<td' + (vb > va ? ' class="win"' : '') + '>' + f(vb) + '</td></tr>';
