@@ -370,6 +370,22 @@ html[data-theme="light"] .versus{
 .code-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:800;
   letter-spacing:.2em;text-align:center;background:var(--surface-2);border:1px dashed var(--line);
   border-radius:13px;padding:14px;margin-bottom:12px}
+/* Login-Schirm */
+.gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;
+  padding:22px;overflow:auto}
+.gate-inner{width:100%;max-width:420px;animation:up .3s ease}
+.gate-logo{width:64px;height:64px;border-radius:19px;display:block;margin:0 auto 16px;
+  box-shadow:0 10px 26px rgba(255,45,45,.3)}
+.gate h2{text-align:center;font-size:22px;font-weight:900;letter-spacing:-.02em;color:var(--text);
+  text-transform:none;margin-bottom:7px}
+.gate p.lead{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:20px;line-height:1.5}
+.gate .hint{text-align:center;font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}
+.gate .sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11.5px;
+  font-weight:800;letter-spacing:.08em;margin:16px 0}
+.gate .sep::before,.gate .sep::after{content:'';flex:1;height:1px;background:var(--line)}
+#gateCode{text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:19px;font-weight:800;letter-spacing:.16em}
+
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pick button{padding:14px 10px;border-radius:14px;background:var(--surface-2);border:2px solid var(--line);
   font-weight:800;font-size:14.5px;color:var(--text)}
@@ -787,8 +803,13 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
     </div>
 
     <div class="card">
+      <div class="card-head"><h2>Konto</h2><span class="pill" id="accPill">–</span></div>
+      <div id="accountBox"></div>
+    </div>
+
+    <div class="card">
       <h2>Export &amp; Import</h2>
-      <p class="sub">Alle Daten liegen lokal im Browser (LocalStorage)</p>
+      <p class="sub" id="storageNote">Alle Daten liegen lokal im Browser (LocalStorage)</p>
       <div class="grid g2">
         <button class="btn ghost sm" style="width:100%" id="btnExport">Export JSON</button>
         <button class="btn ghost sm" style="width:100%" id="btnImport">Import JSON</button>
@@ -833,6 +854,31 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
     <button class="tab" data-view="data"><span class="ic">⚙️</span>Daten</button>
   </div>
 </nav>
+
+<!-- ============================================================
+     LOGIN: ein Code für die ganze Challenge
+     ============================================================ -->
+<div class="gate" id="gate" style="display:none">
+  <div class="gate-inner">
+    <img class="gate-logo" src="icons/favicon-180.png" width="64" height="64" alt="">
+    <h2>Tom Holland Challenge</h2>
+    <p class="lead">Melde dich mit deinem Zugangscode an – selbst ausgedacht oder zufällig erzeugt.
+      Auf jedem Gerät derselbe Code, dann sind Workouts, Seasons, Abzeichen und Einstellungen überall gleich.</p>
+
+    <label class="field"><span>Zugangscode</span>
+      <input type="text" id="gateCode" maxlength="17" placeholder="z. B. JANTH2026"
+             autocapitalize="characters" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>Dein Name</span>
+      <input type="text" id="gateName" maxlength="18" placeholder="z. B. Jan" autocomplete="off"></label>
+    <button class="btn" id="gateLogin">Anmelden</button>
+
+    <div class="sep">ODER</div>
+    <button class="btn ghost" id="gateNew">Neuen Zugang erstellen</button>
+    <button class="btn ghost" style="margin-top:8px" id="gateLocal">Ohne Konto, nur auf diesem Gerät</button>
+    <p class="hint" id="gateHint">Der Code ist dein Schlüssel und dein Passwort zugleich. Nimm etwas,
+      das du dir merkst, aber nicht deinen blossen Vornamen – die Seite ist öffentlich erreichbar.</p>
+  </div>
+</div>
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div id="toasts"></div>
@@ -973,6 +1019,8 @@ function defaultState(){
     workouts: [],
     badges: {},                       // id -> Datum des Freischaltens
     settings: { goalWorkouts: 14, sound: true },
+    account: null,                    // { code, name } – Login für die ganze App
+    updated: 0,                       // Zeitstempel des letzten Speicherns (für den Abgleich)
     duel: null,                       // { code, slot, name } sobald einem Duell beigetreten
     duelRemoved: []                   // IDs gelöschter Workouts – damit sie nicht vom anderen Gerät zurückkommen
   };
@@ -981,7 +1029,7 @@ function defaultState(){
 function load(){
   try{
     const raw = localStorage.getItem(LS_KEY);
-    if(!raw){ state = defaultState(); save(); return; }
+    if(!raw){ state = defaultState(); applyingRemote = true; save(); applyingRemote = false; return; }
     const data = JSON.parse(raw);
     state = Object.assign(defaultState(), data);
     state.settings = Object.assign({ goalWorkouts:14, sound:true }, data.settings || {});
@@ -990,6 +1038,7 @@ function load(){
     if(!state.badges || typeof state.badges !== 'object') state.badges = {};
     if(state.duel && (!state.duel.code || !state.duel.slot)) state.duel = null;
     if(!Array.isArray(state.duelRemoved)) state.duelRemoved = [];
+    if(state.account && !state.account.code) state.account = null;
   }catch(e){
     console.error('Daten defekt, starte neu:', e);
     state = defaultState();
@@ -997,10 +1046,12 @@ function load(){
 }
 let storageWarned = false;
 function save(){
+  if(!applyingRemote) state.updated = Date.now();
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
   catch(e){
     if(!storageWarned){ storageWarned = true; toast('⚠️ Kein Speicherzugriff – Daten gehen beim Schliessen verloren'); }
   }
+  if(!applyingRemote) accountQueuePush();
 }
 
 const currentSeason = () => state.seasons.find(s => s.id === state.currentSeasonId) || state.seasons[state.seasons.length-1];
@@ -1537,6 +1588,275 @@ function renderCharts(){
 }
 
 
+
+/* ============================================================
+   4a. KONTO
+   ------------------------------------------------------------
+   Ein Zugangscode pro Person gilt für die ganze App. Der komplette
+   Zustand (Workouts, Seasons, Abzeichen, Einstellungen, Theme) liegt
+   unter athletes/{code} und wird zwischen allen Geräten abgeglichen,
+   die mit demselben Code angemeldet sind.
+
+   Abgrenzung zum Duell: der Zugangscode ist privat, der Duell-Code wird
+   mit dem Gegner geteilt. Wer den Duell-Code hat, sieht nur die gespiegelten
+   Workouts – nicht dein Konto.
+   ============================================================ */
+/* Firebase genau einmal hochfahren. Vorher haben Konto und Duell je eine
+   eigene Anmeldung gestartet – wessen Zugriff zuerst kam, lief gelegentlich
+   los, bevor die anonyme Anmeldung stand, und wurde von den Regeln abgewiesen. */
+let fbPromise = null;
+function firebaseReady(){
+  if(fbPromise) return fbPromise;
+  fbPromise = (async () => {
+    const [{ initializeApp }, auth, fs] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+    ]);
+    const app = initializeApp(FIREBASE_CONFIG);
+    await auth.signInAnonymously(auth.getAuth(app));   // unsichtbar; nur damit die Regeln greifen
+    return { fs, db: fs.getFirestore(app) };
+  })();
+  return fbPromise;
+}
+
+let account = { fb:null, unsub:null, timer:null, on:false };
+let applyingRemote = false;       // verhindert, dass eingespielte Daten sofort zurückgeschrieben werden
+
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // ohne I/O/0/1
+function newAccountCode(){
+  let c = '';
+  for(let i=0;i<8;i++) c += CODE_ALPHABET[(Math.random()*CODE_ALPHABET.length)|0];
+  return c;
+}
+const prettyCode = c => (c && c.length === 8) ? c.slice(0,4) + '-' + c.slice(4) : (c || '');
+const cleanCode  = c => String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+
+/** Voller Zustand in kompakter Form für die Übertragung */
+function accountPayload(){
+  return {
+    name: state.account.name || 'Athlet',
+    updated: state.updated || Date.now(),
+    workouts: allWorkouts().map(w => ({
+      i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId
+    })),
+    removed: (state.duelRemoved||[]).slice(-300),
+    seasons: state.seasons,
+    currentSeasonId: state.currentSeasonId,
+    badges: state.badges,
+    settings: state.settings,
+    theme: state.theme
+  };
+}
+
+/** Eingehenden Kontostand mit dem lokalen vereinigen */
+function accountMerge(doc){
+  if(!doc) return false;
+  const lokalLeer = !state.workouts.length && !Object.keys(state.badges || {}).length;
+  const remoteNewer = lokalLeer || (doc.updated || 0) > (state.updated || 0);
+  let changed = false;
+
+  // Workouts: Vereinigung über die ID, ohne gelöschte und ohne Dubletten
+  const newTomb = (doc.removed || []).filter(id => !state.duelRemoved.includes(id));
+  if(newTomb.length){ state.duelRemoved = state.duelRemoved.concat(newTomb); changed = true; }
+
+  const dead = new Set(state.duelRemoved);
+  const known = new Set(state.workouts.map(w => w.id));
+  const sameDay = new Set(state.workouts.map(w => w.date + '|' + w.rounds));
+  const seasonIds = new Set(state.seasons.map(x => x.id));
+
+  const incoming = (doc.workouts || [])
+    .filter(w => w && typeof w.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.d))
+    .map(w => ({ id:w.i || ('w_'+(w.c||Date.now())+'_x'), date:w.d, rounds:+w.r||0,
+                 notes:w.n||'', created:w.c||0, seasonId:w.s }))
+    .filter(w => !known.has(w.id) && !dead.has(w.id) && !sameDay.has(w.date + '|' + w.rounds));
+
+  const drop = state.workouts.filter(w => dead.has(w.id));
+  if(incoming.length || drop.length){
+    state.workouts = state.workouts
+      .filter(w => !dead.has(w.id))
+      .concat(incoming.map(w => Object.assign({}, w, {
+        seasonId: seasonIds.has(w.seasonId) ? w.seasonId : state.currentSeasonId
+      })));
+    changed = true;
+  }
+
+  // Seasons: Vereinigung über die ID, fehlende ergänzen
+  (doc.seasons || []).forEach(sn => {
+    if(sn && sn.id != null && !seasonIds.has(sn.id)){ state.seasons.push(sn); changed = true; }
+  });
+  state.seasons.sort((x,y) => x.id - y.id);
+
+  // Abzeichen: Vereinigung, das frühere Freischaltdatum gewinnt
+  Object.entries(doc.badges || {}).forEach(([id, date]) => {
+    if(!state.badges[id] || date < state.badges[id]){ state.badges[id] = date; changed = true; }
+  });
+
+  // Einstellungen, aktuelle Season und Theme: der neuere Stand gewinnt
+  if(remoteNewer){
+    if(doc.settings){ state.settings = Object.assign({}, state.settings, doc.settings); changed = true; }
+    if(doc.currentSeasonId && state.seasons.some(x => x.id === doc.currentSeasonId)
+       && doc.currentSeasonId !== state.currentSeasonId){
+      state.currentSeasonId = doc.currentSeasonId; changed = true;
+    }
+    if(doc.theme && doc.theme !== state.theme){ state.theme = doc.theme; changed = true; }
+    if(doc.name && doc.name !== state.account.name){ state.account.name = doc.name; changed = true; }
+  }
+
+  if(changed){
+    applyingRemote = true;
+    save();
+    applyingRemote = false;
+    applyTheme();
+    renderAll();
+    checkBadges();
+    renderDuel();
+  }
+  return incoming.length;
+}
+
+async function accountPush(){
+  if(!account.on || !account.fb || !state.account) return;
+  const { fs, db } = account.fb;
+  try{
+    await fs.setDoc(fs.doc(db, 'athletes', state.account.code), accountPayload());
+  }catch(e){
+    console.error('[Konto senden]', e);
+    if(!account.warned){
+      account.warned = true;
+      toast('Konto konnte nicht gesichert werden (' + (e.code || 'Fehler') + ')');
+    }
+  }
+}
+/** Uploads bündeln: viele Änderungen kurz hintereinander ergeben einen Schreibvorgang */
+function accountQueuePush(){
+  if(!account.on) return;
+  clearTimeout(account.timer);
+  account.timer = setTimeout(accountPush, 700);
+}
+
+async function accountConnect(){
+  if(!CLOUD_READY || !state.account) return false;
+  const { fs, db } = await firebaseReady();
+  account.fb = { fs, db };
+  account.on = true;
+
+  // Gleiche Reihenfolge wie beim Duell: erst lesen und vereinigen, dann schreiben.
+  const ref = fs.doc(db, 'athletes', state.account.code);
+  try{
+    const snap = await fs.getDoc(ref);
+    if(snap.exists()) accountMerge(snap.data());
+  }catch(e){ console.error('[Konto lesen]', e); }
+  await accountPush();
+
+  if(account.unsub) account.unsub();
+  account.unsub = fs.onSnapshot(ref, snap => {
+    if(!snap.exists() || snap.metadata.hasPendingWrites) return;   // eigenes Echo überspringen
+    const n = accountMerge(snap.data());
+    if(n) toast('🔄 ' + n + ' Workout' + (n===1?'':'s') + ' von deinem anderen Gerät übernommen');
+  }, err => { console.error('[Konto Abo]', err); account.on = false; renderAccountUi(); });
+
+  renderAccountUi();
+  return true;
+}
+
+function accountLogout(){
+  openModal(
+    '<h3>Abmelden?</h3><p class="muted tiny" style="margin:0 0 8px">Deine Daten bleiben unter dem Code ' +
+    '<b>' + esc(prettyCode(state.account.code)) + '</b> gespeichert und sind nach erneuter Anmeldung wieder da.</p>' +
+    '<p class="muted tiny" style="margin:0 0 16px">Auf diesem Gerät werden sie entfernt. Notier dir den Code.</p>' +
+    '<button class="btn danger" id="okLo">Abmelden</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="noLo">Abbrechen</button>',
+    () => {
+      $('#okLo').addEventListener('click', () => {
+        if(account.unsub){ account.unsub(); account.unsub = null; }
+        if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
+        account.on = false; duelConn.on = false; rival = null;
+        state = defaultState();
+        applyingRemote = true; save(); applyingRemote = false;
+        closeModal();
+        location.reload();
+      });
+      $('#noLo').addEventListener('click', closeModal);
+    }
+  );
+}
+
+function renderAccountUi(){
+  const box = $('#accountBox');
+  if(!box) return;
+  const pill = $('#accPill');
+  if(pill){
+    pill.textContent = !state.account ? 'nur dieses Gerät' : (account.on ? 'synchronisiert' : 'offline');
+    pill.className = 'pill' + (!state.account ? '' : (account.on ? ' on' : ' warn'));
+  }
+  const note = $('#storageNote');
+  if(note){
+    note.textContent = state.account && account.on
+      ? 'Daten liegen im Browser und zusätzlich in deinem Konto'
+      : 'Alle Daten liegen lokal im Browser (LocalStorage)';
+  }
+  if(!state.account){
+    box.innerHTML = '<p class="sub" style="margin:0 0 12px">Du arbeitest nur auf diesem Gerät. ' +
+      'Mit einem Zugangscode gleichen sich alle deine Geräte ab.</p>' +
+      '<button class="btn sm" style="width:100%" id="accLogin">Konto einrichten</button>';
+    $('#accLogin').addEventListener('click', () => showGate(true));
+    return;
+  }
+  box.innerHTML =
+    '<p class="sub" style="margin:0 0 10px">Angemeldet als <b>' + esc(state.account.name) + '</b>' +
+    (account.on ? ' · <span style="color:var(--mint)">synchronisiert</span>'
+                : ' · <span style="color:var(--gold)">offline</span>') + '</p>' +
+    '<div class="code-box" id="accCode">' + esc(prettyCode(state.account.code)) + '</div>' +
+    '<div class="grid g2">' +
+      '<button class="btn ghost sm" style="width:100%" id="accCopy">Code kopieren</button>' +
+      '<button class="btn ghost sm" style="width:100%" id="accOut">Abmelden</button>' +
+    '</div>' +
+    '<p class="tiny muted" style="margin-top:10px">Auf dem zweiten Gerät denselben Code eingeben – ' +
+    'dann sind dort alle Workouts, Seasons und Abzeichen vorhanden.</p>';
+  $('#accCopy').addEventListener('click', async () => {
+    try{ await navigator.clipboard.writeText(prettyCode(state.account.code)); toast('Code kopiert'); }
+    catch(e){ toast('Code: ' + prettyCode(state.account.code)); }
+  });
+  $('#accOut').addEventListener('click', accountLogout);
+}
+
+function showGate(on){ $('#gate').style.display = on ? 'grid' : 'none'; }
+
+function bindGate(){
+  $('#gateNew').addEventListener('click', () => {
+    $('#gateCode').value = prettyCode(newAccountCode());
+    $('#gateHint').textContent = 'Neuer Code erzeugt. Notier ihn dir – mit ihm kommst du auf jedem Gerät an deine Daten.';
+  });
+  $('#gateLocal').addEventListener('click', () => {
+    showGate(false);
+    toast('Ohne Konto – die Daten bleiben auf diesem Gerät');
+  });
+  $('#gateLogin').addEventListener('click', async () => {
+    const code = cleanCode($('#gateCode').value);
+    const name = $('#gateName').value.trim();
+    if(code.length < 6){ $('#gateHint').textContent = 'Mindestens 6 Zeichen – Buchstaben und Ziffern.'; return; }
+    if(code.length > 16){ $('#gateHint').textContent = 'Höchstens 16 Zeichen.'; return; }
+    if(!name){ $('#gateHint').textContent = 'Bitte deinen Namen eingeben.'; return; }
+    $('#gateLogin').disabled = true;
+    $('#gateHint').textContent = 'Melde an …';
+    state.account = { code, name };
+    applyingRemote = true; save(); applyingRemote = false;
+    try{
+      await accountConnect();
+      showGate(false);
+      toast('Angemeldet als ' + name, true);
+    }catch(e){
+      console.error(e);
+      state.account = null;
+      applyingRemote = true; save(); applyingRemote = false;
+      $('#gateHint').textContent = 'Anmeldung fehlgeschlagen – bist du online?';
+    }
+    $('#gateLogin').disabled = false;
+    renderAccountUi();
+  });
+}
+
 /* ============================================================
    4b. DUELL
    ------------------------------------------------------------
@@ -1547,7 +1867,7 @@ function renderCharts(){
    der Tracker unverändert weiter.
    ============================================================ */
 let rival = null;          // { name, workouts:[{date,rounds,notes}], updated }
-let duelConn = { on:false, fb:null, unsub:null, busy:false };
+let duelConn = { on:false, fb:null, unsub:null };
 let duelPick = 'a';
 
 const HOLLAND = 27;
@@ -1577,18 +1897,21 @@ const rivalList = () => rival ? fromPayload(rival.workouts).sort(byDate) : [];
 
 async function duelConnect(){
   if(!CLOUD_READY || !state.duel) return false;
-  const [{ initializeApp }, auth, fs] = await Promise.all([
-    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
-    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
-    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
-  ]);
-  const app = initializeApp(FIREBASE_CONFIG);
-  const a = auth.getAuth(app);
-  await auth.signInAnonymously(a);            // unsichtbar; nur damit die Regeln greifen
-  const db = fs.getFirestore(app);
+  const { fs, db } = await firebaseReady();
   duelConn.fb = { fs, db };
 
   if(duelConn.unsub) duelConn.unsub();
+  duelConn.on = true;
+
+  // Reihenfolge ist entscheidend: erst den eigenen Stand aus der Cloud lesen und
+  // mit dem lokalen vereinigen, erst dann hochladen. Andernfalls überschreibt ein
+  // frisch beigetretenes Gerät den Stand des anderen mit seinem kleineren.
+  try{
+    const ownSnap = await fs.getDoc(fs.doc(db, 'duels', state.duel.code, 'athletes', state.duel.slot));
+    if(ownSnap.exists()) mergeOwn(ownSnap.data());
+  }catch(e){ console.error('[Duell lesen]', e); }
+  await duelPush();
+
   // Beide Athleten-Dokumente abonnieren: das fremde für den Vergleich,
   // das eigene für den Abgleich zwischen Handy und Laptop.
   duelConn.unsub = fs.onSnapshot(
@@ -1608,10 +1931,8 @@ async function duelConnect(){
       });
       renderDuel();
     },
-    err => { console.error(err); duelConn.on = false; renderDuel(); }
+    err => { console.error('[Duell Abo]', err); duelConn.on = false; renderDuel(); }
   );
-  duelConn.on = true;
-  await duelPush();
   renderDuel();
   return true;
 }
@@ -1619,7 +1940,7 @@ async function duelConnect(){
 /** Eigener Stand aus der Cloud (= anderes Gerät) in die lokalen Daten übernehmen.
     Vereinigung über die Workout-ID; gelöschte IDs (Tombstones) bleiben draussen. */
 function mergeOwn(doc){
-  if(!doc || duelConn.busy) return;
+  if(!doc) return;
   const remoteRemoved = Array.isArray(doc.removed) ? doc.removed : [];
   // Löschungen des anderen Geräts nachvollziehen
   const newTomb = remoteRemoved.filter(id => !state.duelRemoved.includes(id));
@@ -1629,8 +1950,15 @@ function mergeOwn(doc){
   const dead  = new Set(state.duelRemoved);
   const seasonIds = new Set(state.seasons.map(x => x.id));
 
+  // Zusätzlich gegen Dubletten absichern: dasselbe Training auf beiden Geräten
+  // von Hand erfasst ergibt zwei verschiedene IDs, meint aber ein Workout.
+  // Da hinter beiden Geräten dieselbe Person steckt, ist gleiches Datum bei
+  // gleicher Rundenzahl praktisch immer derselbe Eintrag.
+  const sameDay = new Set(state.workouts.map(w => w.date + '|' + w.rounds));
+
   const incoming = fromPayload(doc.workouts)
     .filter(w => !known.has(w.id) && !dead.has(w.id))
+    .filter(w => !sameDay.has(w.date + '|' + w.rounds))
     .map(w => Object.assign({}, w, {
       seasonId: seasonIds.has(w.seasonId) ? w.seasonId : state.currentSeasonId
     }));
@@ -1653,7 +1981,6 @@ async function duelPush(){
   if(!duelConn.on || !duelConn.fb || !state.duel) return;
   const { fs, db } = duelConn.fb;
   try{
-    duelConn.busy = true;
     await fs.setDoc(fs.doc(db, 'duels', state.duel.code, 'athletes', state.duel.slot), {
       name: state.duel.name || 'Athlet',
       workouts: myPayload(),
@@ -1661,10 +1988,8 @@ async function duelPush(){
       updated: Date.now()
     });
   }catch(e){
-    console.error(e);
+    console.error('[Duell senden]', e);
     toast('Duell-Daten konnten nicht gesendet werden');
-  }finally{
-    duelConn.busy = false;
   }
 }
 /** Von jeder Stelle aufrufbar, die state.workouts verändert */
@@ -1865,6 +2190,7 @@ function bindDuel(){
   // Code aus dem Einladungslink vorbelegen: …/index.html#TH7K2M
   const h = location.hash.replace('#','').trim().toUpperCase();
   if(h && !state.duel) $('#dCode').value = h;
+  if(state.account && !$('#dName').value) $('#dName').value = state.account.name;
 }
 
 /* ---------- 5. Timer ---------- */
@@ -2422,7 +2748,15 @@ function init(){
   timerRender();
   warmRender();
   bindDuel();
+  bindGate();
   renderDuel();
+  renderAccountUi();
+
+  if(state.account && CLOUD_READY){
+    accountConnect().catch(e => { console.error(e); account.on = false; renderAccountUi(); });
+  }else if(CLOUD_READY && !state.account && !state.workouts.length){
+    showGate(true);        // erster Start: Login anbieten, aber nie erzwingen
+  }
   if(state.duel && CLOUD_READY){
     duelConnect().catch(e => { console.error(e); duelConn.on = false; renderDuel(); });
   }

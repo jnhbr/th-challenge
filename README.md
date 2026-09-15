@@ -42,10 +42,31 @@ Gegner schicken, der wählt Athlet B. Die bisherigen Workouts werden automatisch
 Über *Einladung teilen* gibt es einen Link mit Code (`…/index.html#THXXXX`), der das Feld
 beim Gegner schon ausfüllt.
 
+## Konto: ein Code für die ganze App
+
+Beim ersten Öffnen fragt die Seite nach einem **Zugangscode** – selbst ausgedacht (mindestens
+6 Zeichen) oder per Knopfdruck zufällig erzeugt. Der Code ist Login und Passwort in einem.
+
+Mit demselben Code auf Handy und Laptop angemeldet, gleicht sich **der gesamte Tracker** ab:
+Workouts, Seasons, Abzeichen, Einstellungen und das Farbschema. Wer keinen Code will, wählt
+*Ohne Konto, nur auf diesem Gerät* – dann verhält sich die App wie vorher, rein lokal.
+
+Zusammengeführt wird so:
+
+- **Workouts** – Vereinigung über die Workout-ID. Gelöschte bleiben gelöscht (Liste gelöschter
+  IDs). Gleiches Datum bei gleicher Rundenzahl gilt als derselbe Eintrag, damit ein versehentlich
+  doppelt erfasstes Training nicht zweimal erscheint.
+- **Abzeichen** – Vereinigung, das frühere Freischaltdatum gewinnt.
+- **Seasons** – fehlende werden ergänzt.
+- **Einstellungen, aktuelle Season, Theme** – der zuletzt gespeicherte Stand gewinnt.
+
+Der Zugangscode ist **privat**. Der Duell-Code ist ein anderer und wird mit dem Gegner geteilt –
+über ihn sieht der andere nur die gespiegelten Workouts, nicht dein Konto.
+
 ## Mehrere Geräte
 
-Handy und Laptop melden sich **mit demselben Code, demselben Athleten-Slot und demselben
-Namen** an – dann gehören sie zum selben Athleten und gleichen sich gegenseitig ab:
+Für das Duell melden sich Handy und Laptop **mit demselben Duell-Code und demselben
+Athleten-Slot** an – dann gehören sie zum selben Athleten:
 
 - Beide Geräte schreiben in dasselbe Athleten-Dokument und **führen ihre Workouts zusammen**
   (Vereinigung über die Workout-ID), statt sich zu überschreiben.
@@ -54,7 +75,7 @@ Namen** an – dann gehören sie zum selben Athleten und gleichen sich gegenseit
 - Löschungen werden über eine Liste gelöschter IDs übertragen, damit ein gelöschtes Workout
   nicht vom anderen Gerät zurückkommt.
 
-Nicht synchronisiert werden **Seasons, Abzeichen und Einstellungen** – die bleiben pro Gerät.
+Seasons, Abzeichen und Einstellungen laufen über das Konto (siehe oben), nicht über das Duell.
 Workouts, die zu einer auf dem anderen Gerät unbekannten Season gehören, landen dort in der
 aktuellen Season.
 
@@ -64,7 +85,10 @@ A und B müssen unterschiedlich vergeben sein.
 ## Datenmodell
 
 ```
-duels/{code}/athletes/{a|b}   { name, workouts:[{i,d,r,n,c,s}], removed:[id], updated }
+athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s}], removed:[id],
+                                seasons, currentSeasonId, badges, settings, theme }
+duels/{duellcode}/athletes/{a|b}
+                              { name, workouts:[{i,d,r,n,c,s}], removed:[id], updated }
 ```
 
 `i` = Workout-ID, `d` = Datum, `r` = Runden, `n` = Notiz, `c` = Erstellzeit, `s` = Season-ID.

@@ -14,6 +14,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Konto: der komplette Tracker-Zustand einer Person, adressiert über
+    // ihren privaten Zugangscode. Der Code ist das Passwort – die Regeln
+    // begrenzen nur Form und Grösse der Daten.
+    match /athletes/{code} {
+
+      allow read, delete: if request.auth != null
+                          && code.size() >= 6 && code.size() <= 16;
+
+      allow create, update: if request.auth != null
+                   && code.size() >= 6 && code.size() <= 16
+                   && request.resource.data.keys().hasOnly(
+                        ['name','updated','workouts','removed','seasons',
+                         'currentSeasonId','badges','settings','theme'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() <= 18
+                   && request.resource.data.updated is number
+                   && request.resource.data.workouts is list
+                   && request.resource.data.workouts.size() <= 1000
+                   && request.resource.data.removed is list
+                   && request.resource.data.removed.size() <= 300
+                   && request.resource.data.seasons is list
+                   && request.resource.data.seasons.size() <= 100;
+    }
+
     match /duels/{code}/athletes/{slot} {
 
       allow read: if request.auth != null
