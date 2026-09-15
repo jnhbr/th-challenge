@@ -1,45 +1,39 @@
 rules_version = '2';
 
-// Regeln für den Tom-Holland-Duell-Tracker.
-// Grundidee: Nur angemeldete Clients (anonyme Firebase-Auth, unsichtbar für den Nutzer)
-// dürfen überhaupt lesen/schreiben, und auch dann nur innerhalb von duels/{code}.
-// Wer den Code nicht kennt, kann die Workouts nicht finden – der Code ist das Geheimnis.
+// Regeln für den Duell-Teil des Tom-Holland-Trackers.
+//
+// Datenmodell: pro Duell gibt es genau zwei Dokumente – eines je Athlet.
+//   duels/{code}/athletes/a   und   duels/{code}/athletes/b
+// Darin steht der komplette Workout-Stand dieses Athleten. Alle Geräte
+// desselben Athleten schreiben in dasselbe Dokument und führen ihre
+// Stände beim Laden zusammen.
+//
+// Nur angemeldete Clients (anonyme Firebase-Auth, für den Nutzer unsichtbar)
+// dürfen lesen und schreiben. Der Challenge-Code ist das Geheimnis: wer ihn
+// nicht kennt, findet das Duell nicht.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Ein Duell-Dokument hält nur die beiden Anzeigenamen.
-    match /duels/{code} {
-      allow read: if request.auth != null;
+    match /duels/{code}/athletes/{slot} {
+
+      allow read: if request.auth != null
+                  && code.size() >= 4 && code.size() <= 12;
 
       allow write: if request.auth != null
                    && code.size() >= 4 && code.size() <= 12
-                   && request.resource.data.keys().hasOnly(['nameA','nameB','touched'])
-                   && (!('nameA' in request.resource.data) || request.resource.data.nameA is string)
-                   && (!('nameB' in request.resource.data) || request.resource.data.nameB is string)
-                   && (!('nameA' in request.resource.data) || request.resource.data.nameA.size() <= 18)
-                   && (!('nameB' in request.resource.data) || request.resource.data.nameB.size() <= 18);
-
-      // Die eigentlichen Workouts.
-      match /workouts/{id} {
-        allow read: if request.auth != null;
-
-        allow create, update: if request.auth != null
-                    && request.resource.data.keys().hasOnly(['slot','date','rounds','notes','ts'])
-                    && request.resource.data.slot in ['a','b']
-                    && request.resource.data.date is string
-                    && request.resource.data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
-                    && request.resource.data.rounds is number
-                    && request.resource.data.rounds >= 0
-                    && request.resource.data.rounds <= 80
-                    && request.resource.data.notes is string
-                    && request.resource.data.notes.size() <= 300
-                    && request.resource.data.ts is number;
-
-        allow delete: if request.auth != null;
-      }
+                   && slot in ['a', 'b']
+                   && request.resource.data.keys().hasOnly(['name','workouts','removed','updated'])
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() <= 18
+                   && request.resource.data.workouts is list
+                   && request.resource.data.workouts.size() <= 1000
+                   && request.resource.data.removed is list
+                   && request.resource.data.removed.size() <= 200
+                   && request.resource.data.updated is number;
     }
 
-    // Alles andere ist dicht.
+    // Das Duell-Dokument selbst trägt keine Daten und wird nicht beschrieben.
+    // Alles Übrige ist dicht.
     match /{document=**} {
       allow read, write: if false;
     }

@@ -4,86 +4,119 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0D10">
-<title>Duell · Tom Holland Challenge</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<title>Tom Holland Challenge · Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
 
-<!-- Chart.js via CDN. Ohne Internet läuft die Seite weiter – nur die Grafiken fehlen dann. -->
+<!-- Chart.js via CDN. Fehlt das Internet, läuft die App weiter - nur die Grafiken zeigen dann einen Hinweis. -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <style>
 /* ============================================================
-   1. Design-Tokens – identisch zum lokalen Tracker,
-      ergänzt um eine zweite Athleten-Farbe (Blau für den Gegner)
+   1. Design-Tokens (Dark + Light)
    ============================================================ */
 :root{
-  --bg:#0B0D10; --bg-2:#0F1319; --surface:#14181F; --surface-2:#1A1F28;
-  --line:#242B36; --text:#F2F5F8; --muted:#8A94A4;
-  --accent:#FF5A1F; --accent-2:#FF8A3D;
-  --rival:#4DA3FF; --rival-2:#7FC0FF;
-  --mint:#00E5A0; --gold:#FFC857; --danger:#FF4D5E;
-  --grad:linear-gradient(135deg,#FF5A1F,#FF8A3D);
-  --grad-rival:linear-gradient(135deg,#2D7FE0,#7FC0FF);
+  --bg:#0B0D10;
+  --bg-2:#0F1319;
+  --surface:#14181F;
+  --surface-2:#1A1F28;
+  --line:#242B36;
+  --text:#F2F5F8;
+  --muted:#8A94A4;
+  --accent:#FF5A1F;
+  --accent-2:#FF8A3D;
+  --mint:#00E5A0;
+  --blue:#4DA3FF;
+  --gold:#FFC857;
+  --danger:#FF4D5E;
   --shadow:0 10px 30px rgba(0,0,0,.45);
   --radius:18px;
+  --grad:linear-gradient(135deg,#FF5A1F 0%,#FF8A3D 100%);
 }
 html[data-theme="light"]{
-  --bg:#F5F7FA; --bg-2:#EDF1F6; --surface:#FFFFFF; --surface-2:#F2F5F9;
-  --line:#DDE3EC; --text:#121821; --muted:#65718A;
-  --shadow:0 8px 24px rgba(18,24,33,.09);
+  --bg:#F3F5F8;
+  --bg-2:#EAEEF3;
+  --surface:#FFFFFF;
+  --surface-2:#F6F8FB;
+  --line:#DCE3EC;
+  --text:#101720;
+  --muted:#5D6A7A;
+  --shadow:0 10px 24px rgba(16,23,32,.10);
 }
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
 body{
-  margin:0;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
-  padding-bottom:calc(74px + env(safe-area-inset-bottom));
-  -webkit-font-smoothing:antialiased
+  background:
+    radial-gradient(900px 500px at 100% -10%, rgba(255,90,31,.14), transparent 60%),
+    radial-gradient(800px 500px at -10% 10%, rgba(0,229,160,.10), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px;line-height:1.45;
+  padding-bottom:calc(92px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+  transition:background .3s ease,color .3s ease;
 }
-h1,h2,h3,p{margin:0}
-button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer;border:0;background:none}
-.wrap{max-width:1120px;margin:0 auto;padding:16px}
+h1,h2,h3{margin:0;line-height:1.2;letter-spacing:-.02em}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:16px}
 
 /* ============================================================
-   2. Kopf & Navigation
+   2. Layout
    ============================================================ */
-header.app{
-  position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
-  backdrop-filter:blur(14px);border-bottom:1px solid var(--line)
-}
-.head-row{display:flex;align-items:center;gap:12px;padding:12px 16px}
-.logo{
-  width:42px;height:42px;border-radius:13px;background:var(--grad);display:grid;place-items:center;
-  font-size:21px;box-shadow:0 8px 20px rgba(255,90,31,.3);flex:none
-}
-.brand h1{font-size:17px;font-weight:900;letter-spacing:-.02em}
-.brand small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
-.icon-btn{
-  width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
-  display:grid;place-items:center;font-size:17px;flex:none
-}
-.head-row .icon-btn:first-of-type{margin-left:auto}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
 
-nav.tabs{
-  position:fixed;left:0;right:0;bottom:0;z-index:60;
-  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);
-  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
+header.app{
+  position:sticky;top:0;z-index:40;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom:1px solid var(--line);
 }
-.tabs-inner{display:flex;max-width:1120px;margin:0 auto}
+html[data-theme="light"] header.app{background:rgba(255,255,255,.78)}
+.head-row{display:flex;align-items:center;gap:12px;padding:12px 0}
+.logo{
+  width:40px;height:40px;border-radius:12px;background:var(--grad);
+  display:grid;place-items:center;font-size:20px;flex:0 0 auto;
+  box-shadow:0 6px 18px rgba(255,90,31,.35)
+}
+.brand{flex:1;min-width:0}
+.brand h1{font-size:17px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{color:var(--muted);font-size:12px;font-weight:600}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
+  background:var(--surface);color:var(--text);display:grid;place-items:center;font-size:17px;
+  transition:transform .15s ease,border-color .15s ease
+}
+.icon-btn:active{transform:scale(.92)}
+
+/* Tab-Navigation (unten = App-Feeling auf dem Handy) */
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid var(--line);
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+}
+html[data-theme="light"] nav.tabs{background:rgba(255,255,255,.9)}
+.tabs-inner{display:flex;gap:2px;max-width:1120px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
+.tabs-inner::-webkit-scrollbar{display:none}
 .tab{
-  flex:1;padding:9px 4px 10px;color:var(--muted);font-size:10.5px;font-weight:800;
-  display:grid;gap:3px;justify-items:center;letter-spacing:.02em
+  flex:1 0 auto;min-width:64px;border:0;background:transparent;color:var(--muted);
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 6px;border-radius:14px;font-size:10.5px;font-weight:700;letter-spacing:.01em;
+  transition:color .18s ease,background .18s ease
 }
 .tab .ic{font-size:19px;line-height:1}
-.tab.active{color:var(--text)}
-.tab.active .ic{transform:translateY(-1px)}
+.tab.active{color:var(--text);background:var(--surface)}
+.tab.active .ic{filter:drop-shadow(0 3px 10px rgba(255,90,31,.5))}
 
-.view{display:none;animation:fade .25s ease}
+main{padding-top:18px}
+.view{display:none;animation:fade .28s ease}
 .view.active{display:block}
-@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ============================================================
-   3. Bausteine
+   3. Karten & Bausteine
    ============================================================ */
 .card{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
@@ -96,65 +129,191 @@ nav.tabs{
 .grid{display:grid;gap:12px}
 .g2{grid-template-columns:repeat(2,1fr)}
 .g3{grid-template-columns:repeat(2,1fr)}
-@media(min-width:720px){.g3{grid-template-columns:repeat(3,1fr)}}
+.g4{grid-template-columns:repeat(2,1fr)}
+@media(min-width:720px){
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+}
 
-.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.stat{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;
+  position:relative;overflow:hidden;transition:transform .18s ease
+}
+.stat:active{transform:scale(.985)}
 .stat .lbl{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.stat .val{font-size:26px;font-weight:900;letter-spacing:-.03em;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat .val{font-size:27px;font-weight:900;letter-spacing:-.03em;margin-top:3px;font-variant-numeric:tabular-nums}
 .stat .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
-.stat.me .val{color:var(--accent)}
-.stat.rival .val{color:var(--rival)}
+.stat.accent .val{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .stat.mint .val{color:var(--mint)}
 .stat.gold .val{color:var(--gold)}
+.stat.blue .val{color:var(--blue)}
 
 .bar{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
-.bar > span{display:block;height:100%;background:var(--grad);border-radius:99px;width:0;
-  transition:width .8s cubic-bezier(.2,.8,.2,1)}
-.bar.rival > span{background:var(--grad-rival)}
+.bar > span{display:block;height:100%;background:var(--grad);border-radius:99px;width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bar.mint > span{background:linear-gradient(135deg,#00E5A0,#5BFFD0)}
+.bar.gold > span{background:linear-gradient(135deg,#FFC857,#FFE39B)}
 
 .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .muted{color:var(--muted)}
 .tiny{font-size:12px}
-.hr{height:1px;background:var(--line);margin:14px 0}
+.mono{font-variant-numeric:tabular-nums}
 
 .btn{
-  width:100%;padding:14px;border-radius:14px;background:var(--grad);color:#fff;
-  font-weight:800;font-size:15px;box-shadow:0 8px 20px rgba(255,90,31,.26)
+  border:0;border-radius:14px;padding:13px 16px;font-weight:800;font-size:15px;
+  background:var(--grad);color:#fff;box-shadow:0 8px 20px rgba(255,90,31,.28);
+  transition:transform .15s ease,opacity .15s ease;width:100%
 }
+.btn:active{transform:scale(.97)}
 .btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);box-shadow:none}
-.btn.mint{background:linear-gradient(135deg,#00E5A0,#5BFFD0);color:#04281C;box-shadow:none}
-.btn.danger{background:var(--danger);box-shadow:none}
-.btn.sm{padding:10px;font-size:13.5px;border-radius:12px}
-.btn:active{transform:scale(.99)}
-.btn[disabled]{opacity:.45;pointer-events:none}
-.btn-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.btn.mint{background:linear-gradient(135deg,#00E5A0,#00B37E);box-shadow:0 8px 20px rgba(0,229,160,.22);color:#04150F}
+.btn.danger{background:var(--surface-2);color:var(--danger);border:1px solid var(--line);box-shadow:none}
+.btn.sm{padding:9px 12px;font-size:13px;border-radius:11px;width:auto}
 
-.field{display:block;margin-bottom:12px}
-.field > span{display:block;font-size:11.5px;font-weight:800;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.field input,.field select,.field textarea{
-  width:100%;padding:13px;border-radius:13px;background:var(--surface-2);
-  border:1px solid var(--line);outline:none
+label.field{display:block;margin-bottom:12px}
+label.field span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input[type=date],input[type=number],input[type=text],textarea,select{
+  width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+  border-radius:13px;padding:12px 13px;outline:none;transition:border-color .15s ease
 }
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
-.field textarea{min-height:76px;resize:vertical}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{min-height:72px;resize:vertical}
+
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:9px;white-space:nowrap}
+.seg button.active{background:var(--grad);color:#fff}
 
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);
   border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--muted)}
 .pill.on{color:var(--mint);border-color:color-mix(in srgb,var(--mint) 40%,var(--line))}
-.pill.warn{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 40%,var(--line))}
-.pill.off{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
 
-.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
-.seg button{color:var(--muted);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:9px;white-space:nowrap}
-.seg button.active{background:var(--grad);color:#fff}
+/* Hero: Tom-Holland-Vergleich */
+.hero{
+  position:relative;overflow:hidden;border-radius:22px;padding:20px;margin-bottom:14px;
+  background:linear-gradient(160deg, rgba(255,90,31,.20), rgba(20,24,31,.9) 55%), var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow)
+}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,90,31,.35),transparent 65%);pointer-events:none}
+.hero .eyebrow{font-size:10.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2)}
+.hero .big{font-size:56px;font-weight:900;letter-spacing:-.045em;line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.hero .big small{font-size:18px;font-weight:800;color:var(--muted);letter-spacing:0}
+.hero .msg{margin-top:12px;font-size:14px;font-weight:600}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px;font-weight:700}
 
-/* ============================================================
-   4. Duell-Ansicht
-   ============================================================ */
+.level{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;font-weight:900;font-size:12px;
+  background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent-2);
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)
+}
+
+/* Timer */
+.timer-face{text-align:center;padding:10px 0 4px}
+.timer-time{font-size:72px;font-weight:900;letter-spacing:-.05em;font-variant-numeric:tabular-nums;line-height:1}
+@media(min-width:720px){.timer-time{font-size:96px}}
+.timer-ring{position:relative;width:min(280px,72vw);margin:0 auto}
+.timer-ring svg{display:block;width:100%;transform:rotate(-90deg)}
+.timer-ring .inner{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.counter{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:8px}
+.counter button{
+  width:66px;height:66px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--text);font-size:28px;font-weight:800;display:grid;place-items:center
+}
+.counter button.plus{background:var(--grad);color:#fff;border:0;box-shadow:0 8px 20px rgba(255,90,31,.3)}
+.counter .num{font-size:52px;font-weight:900;min-width:92px;font-variant-numeric:tabular-nums}
+.btn-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+
+/* Kalender */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal-dow{font-size:10.5px;font-weight:800;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:.06em}
+.cal-day{
+  aspect-ratio:1;border-radius:11px;background:var(--surface-2);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  font-size:12.5px;font-weight:700;color:var(--muted);position:relative;transition:transform .15s ease
+}
+.cal-day.out{opacity:.25}
+.cal-day.season{border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
+.cal-day.trained{background:linear-gradient(160deg,rgba(0,229,160,.22),rgba(0,229,160,.06));
+  border-color:color-mix(in srgb,var(--mint) 55%,transparent);color:var(--text)}
+.cal-day.pr{background:linear-gradient(160deg,rgba(255,200,87,.28),rgba(255,200,87,.07));
+  border-color:color-mix(in srgb,var(--gold) 65%,transparent);color:var(--text)}
+.cal-day.today{outline:2px solid var(--accent);outline-offset:1px}
+.cal-day b{font-size:10.5px;font-weight:900;color:var(--mint)}
+.cal-day.pr b{color:var(--gold)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11.5px;color:var(--muted);font-weight:600}
+.dot{width:10px;height:10px;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:-1px}
+
+/* Listen */
+.entry{
+  display:flex;align-items:center;gap:12px;padding:11px;border-radius:14px;
+  background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px
+}
+.entry .rounds{
+  width:52px;height:52px;border-radius:14px;background:var(--grad);color:#fff;
+  display:grid;place-items:center;font-weight:900;font-size:20px;flex:0 0 auto;line-height:1
+}
+.entry .rounds.pr{background:linear-gradient(135deg,#FFC857,#FF9F1C);color:#1A1200}
+.entry .meta{flex:1;min-width:0}
+.entry .meta .d{font-weight:800;font-size:14px}
+.entry .meta .r{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.entry .note{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+.entry .del{border:0;background:transparent;color:var(--muted);font-size:17px;padding:6px}
+
+/* Badges */
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+@media(min-width:640px){.badges{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px){.badges{grid-template-columns:repeat(6,1fr)}}
+.badge{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:11px 7px;text-align:center;
+  opacity:.4;filter:grayscale(1);transition:transform .2s ease,opacity .3s ease
+}
+.badge.on{opacity:1;filter:none;border-color:color-mix(in srgb,var(--gold) 45%,transparent);
+  background:linear-gradient(160deg,rgba(255,200,87,.16),var(--surface-2))}
+.badge .ic{font-size:25px;line-height:1.1}
+.badge .t{font-size:10.5px;font-weight:800;margin-top:4px;line-height:1.25}
+.badge .dt{font-size:9.5px;color:var(--muted);margin-top:2px}
+
+/* Tabellen */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.table-scroll{overflow-x:auto}
+
+/* Modal */
+.modal-bg{
+  position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);
+  display:none;align-items:flex-end;justify-content:center;padding:14px
+}
+.modal-bg.open{display:flex}
+@media(min-width:720px){.modal-bg{align-items:center}}
+.modal{
+  background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:20px;
+  width:100%;max-width:460px;box-shadow:var(--shadow);animation:up .3s cubic-bezier(.2,.9,.2,1);
+  max-height:86vh;overflow:auto
+}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-size:20px;font-weight:900;margin-bottom:6px}
+
+/* Toast */
+#toasts{position:fixed;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));z-index:120;
+  display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 16px}
+.toast{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 15px;
+  box-shadow:var(--shadow);font-weight:700;font-size:13.5px;animation:up .3s ease;max-width:380px
+}
+.toast.gold{border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:110;display:none}
+.chart-box{position:relative;height:250px}
+@media(min-width:720px){.chart-box{height:290px}}
+.quote{font-size:15px;font-weight:700;font-style:italic;line-height:1.45}
+.hr{height:1px;background:var(--line);margin:14px 0}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Duell-Ansicht */
 .versus{
   position:relative;overflow:hidden;border-radius:22px;padding:18px;margin-bottom:14px;
-  background:linear-gradient(150deg,rgba(255,90,31,.18),rgba(20,24,31,.85) 48%,rgba(77,163,255,.18)),var(--surface);
+  background:linear-gradient(150deg,rgba(255,90,31,.2),rgba(20,24,31,.85) 48%,rgba(77,163,255,.2)),var(--surface);
   border:1px solid var(--line);box-shadow:var(--shadow)
 }
 html[data-theme="light"] .versus{
@@ -166,96 +325,86 @@ html[data-theme="light"] .versus{
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vs-side .score{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
 .vs-side.me .score{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.vs-side.rival .score{background:var(--grad-rival);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vs-side.rival .score{background:linear-gradient(135deg,#2D7FE0,#7FC0FF);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vs-side .unit{font-size:11.5px;color:var(--muted);margin-top:1px}
-.vs-mid{
-  width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);
-  display:grid;place-items:center;font-size:17px;font-weight:900;color:var(--muted);flex:none
-}
-.vs-lead{
-  margin-top:14px;text-align:center;font-size:14.5px;font-weight:800;line-height:1.4;
-  background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:11px 13px
-}
+.vs-mid{width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:16px;font-weight:900;color:var(--muted)}
+.vs-lead{margin-top:14px;text-align:center;font-size:14.5px;font-weight:800;line-height:1.4;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:11px 13px}
 .vs-bar{display:flex;height:12px;border-radius:99px;overflow:hidden;margin-top:14px;border:1px solid var(--line)}
 .vs-bar i{display:block;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .vs-bar i.me{background:var(--grad)}
-.vs-bar i.rival{background:var(--grad-rival)}
+.vs-bar i.rival{background:linear-gradient(135deg,#2D7FE0,#7FC0FF)}
 .vs-legend{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted)}
 
 .duel-table{width:100%;border-collapse:collapse;font-size:13.5px}
 .duel-table th,.duel-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center}
 .duel-table th{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.duel-table td:first-child,.duel-table th:first-child{text-align:left;color:var(--muted);font-size:12.5px}
+.duel-table td:first-child,.duel-table th:first-child{text-align:left;color:var(--muted);font-size:12.5px;font-weight:600}
 .duel-table td{font-variant-numeric:tabular-nums;font-weight:800}
 .duel-table td.win{color:var(--mint)}
 .duel-table tr:last-child td{border-bottom:0}
-.dot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:5px}
-.dot.me{background:var(--accent)}
-.dot.rival{background:var(--rival)}
+.vdot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:5px}
+.vdot.me{background:var(--accent)}
+.vdot.rival{background:var(--blue)}
 
-/* Verlaufs-Einträge */
-.entry{
-  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
-  background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px;animation:up .25s ease
-}
-.entry.me{border-left:3px solid var(--accent)}
-.entry.rival{border-left:3px solid var(--rival)}
-.entry .val{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;min-width:52px}
-.entry .meta{flex:1;min-width:0}
-.entry .meta b{font-size:13.5px;font-weight:800;display:block}
-.entry .meta small{color:var(--muted);font-size:11.5px;display:block;margin-top:1px;
+.duel-entry{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
+  background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px}
+.duel-entry.me{border-left:3px solid var(--accent)}
+.duel-entry.rival{border-left:3px solid var(--blue)}
+.duel-entry .v{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;min-width:50px}
+.duel-entry .m{flex:1;min-width:0}
+.duel-entry .m b{font-size:13.5px;display:block}
+.duel-entry .m small{color:var(--muted);font-size:11.5px;display:block;margin-top:1px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.entry .del{color:var(--muted);font-size:17px;padding:4px 6px;border-radius:8px;flex:none}
-.entry .pr{font-size:14px}
-.empty{text-align:center;color:var(--muted);font-size:13px;padding:22px 10px}
-
-.chart-box{position:relative;height:250px}
-@media(min-width:720px){.chart-box{height:290px}}
-
-/* Onboarding-Overlay */
-.gate{
-  position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;padding:20px;overflow:auto
-}
-.gate-inner{width:100%;max-width:420px;animation:up .3s ease}
-.gate .logo{width:56px;height:56px;font-size:28px;border-radius:17px;margin:0 auto 14px}
-.gate h2{text-align:center;font-size:21px;font-weight:900;letter-spacing:-.02em;color:var(--text);
-  text-transform:none;margin-bottom:6px}
-.gate p.lead{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:20px;line-height:1.5}
-.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.pick button{
-  padding:15px 10px;border-radius:15px;background:var(--surface-2);border:2px solid var(--line);
-  font-weight:800;font-size:15px;text-align:center
-}
+.code-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:800;
+  letter-spacing:.2em;text-align:center;background:var(--surface-2);border:1px dashed var(--line);
+  border-radius:13px;padding:14px;margin-bottom:12px}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pick button{padding:14px 10px;border-radius:14px;background:var(--surface-2);border:2px solid var(--line);
+  font-weight:800;font-size:14.5px;color:var(--text)}
 .pick button.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}
-.pick button:nth-child(2).sel{border-color:var(--rival);background:color-mix(in srgb,var(--rival) 14%,var(--surface-2))}
+.pick button:nth-child(2).sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--surface-2))}
 
-/* Modal, Toasts */
-.modal-bg{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
-  display:none;align-items:center;justify-content:center;padding:18px}
-.modal-bg.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;
-  width:100%;max-width:400px;box-shadow:var(--shadow);animation:up .25s ease;max-height:86vh;overflow:auto}
-.modal h3{font-size:18px;font-weight:900;margin-bottom:8px}
-#toasts{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));z-index:180;
-  display:grid;gap:8px;justify-items:center;pointer-events:none;padding:0 14px}
-.toast{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 15px;
-  box-shadow:var(--shadow);font-weight:700;font-size:13.5px;animation:up .3s ease;max-width:390px;text-align:center}
-.toast.gold{border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
-
-.code-box{
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:19px;font-weight:800;letter-spacing:.18em;
-  text-align:center;background:var(--surface-2);border:1px dashed var(--line);border-radius:13px;padding:13px
+/* Aufwärm-Modul */
+.warm-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.warm-step{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:13px;padding:10px 11px;
+  transition:border-color .2s ease,background .2s ease
 }
+.warm-step .n{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.warm-step .t{font-size:13px;font-weight:800;margin-top:3px;line-height:1.25}
+.warm-step .d{font-size:11.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.warm-step.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface-2))}
+.warm-step.done{opacity:.5}
+.warm-step.done .t::after{content:" ✓";color:var(--mint)}
+
+.warm-now{
+  background:var(--surface-2);border:1px solid var(--line);border-radius:16px;padding:16px 15px;text-align:center
+}
+.warm-time{font-size:52px;font-weight:900;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.warm-time.urgent{color:var(--accent)}
+.warm-phase{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 12px}
+.warm-list{list-style:none;text-align:left;margin:12px 0 0;display:grid;gap:7px}
+.warm-list li{
+  display:flex;gap:9px;align-items:baseline;font-size:13.5px;line-height:1.35;
+  background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 11px
+}
+.warm-list li b{font-variant-numeric:tabular-nums;color:var(--accent);font-size:12.5px;white-space:nowrap;min-width:52px}
+html[data-theme="light"] .warm-list li{background:var(--bg)}
 </style>
 </head>
 <body>
 
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
 <header class="app">
   <div class="wrap head-row">
-    <div class="logo">⚔️</div>
+    <div class="logo">🔥</div>
     <div class="brand">
-      <h1>Tom Holland Duell</h1>
-      <small id="headSub">Nicht verbunden</small>
+      <h1>Tom Holland Challenge</h1>
+      <small id="headSub">Season 1 · 20 Min AMRAP</small>
     </div>
     <button class="icon-btn" id="themeBtn" title="Dark / Light">🌙</button>
   </div>
@@ -263,210 +412,431 @@ html[data-theme="light"] .versus{
 
 <main class="wrap">
 
-  <!-- ========================== DUELL ========================== -->
-  <section class="view active" id="view-duel">
-    <div class="versus">
-      <div class="vs-head">
-        <div class="vs-side me">
-          <div class="who" id="vsNameA">Du</div>
-          <div class="score" id="vsScoreA">–</div>
-          <div class="unit">Bestleistung</div>
-        </div>
-        <div class="vs-mid">VS</div>
-        <div class="vs-side rival">
-          <div class="who" id="vsNameB">Gegner</div>
-          <div class="score" id="vsScoreB">–</div>
-          <div class="unit">Bestleistung</div>
-        </div>
+  <!-- ==========================================================
+       VIEW: DASHBOARD
+       ========================================================== -->
+  <section class="view active" id="view-dash">
+
+    <!-- Tom-Holland-Vergleich -->
+    <div class="hero">
+      <div class="eyebrow">Dein Rekord vs. Tom Holland</div>
+      <div class="big"><span id="heroPct">0</span><small>% von 27 Runden</small></div>
+      <div class="row-between" style="margin:10px 0 6px">
+        <span class="tiny muted">Du: <b id="heroMine" style="color:var(--text)">0</b> Runden</span>
+        <span class="tiny muted">Ziel: <b style="color:var(--text)">27</b> Runden</span>
       </div>
-      <div class="vs-bar"><i class="me" id="vsBarA" style="width:50%"></i><i class="rival" id="vsBarB" style="width:50%"></i></div>
-      <div class="vs-legend"><span id="vsLegA">–</span><span id="vsLegB">–</span></div>
-      <div class="vs-lead" id="vsLead">Noch keine Workouts – tragt euer erstes Training ein.</div>
+      <div class="bar"><span id="heroBar"></span></div>
+      <div class="scale"><span>0</span><span>Anfänger 8–12</span><span>Elite 27</span></div>
+      <div class="msg" id="heroMsg">Los geht's – trag dein erstes Workout ein.</div>
+      <div style="margin-top:12px"><span class="level" id="heroLevel">🎯 Einsteiger</span></div>
     </div>
 
+    <!-- Challenge-Status -->
     <div class="card">
       <div class="card-head">
-        <h2>Direktvergleich</h2>
-        <div class="seg" id="duelScope">
-          <button data-scope="all" class="active">Gesamt</button>
-          <button data-scope="30">30 Tage</button>
-        </div>
+        <h2>Aktuelle Challenge</h2>
+        <span class="pill" id="seasonPill">Season 1</span>
       </div>
-      <table class="duel-table">
-        <thead><tr>
-          <th></th>
-          <th><span class="dot me"></span><span id="thA">Du</span></th>
-          <th><span class="dot rival"></span><span id="thB">Gegner</span></th>
-        </tr></thead>
-        <tbody id="duelBody"></tbody>
-      </table>
+      <div class="grid g2">
+        <div class="stat accent"><div class="lbl">Verbleibende Tage</div><div class="val" id="sDaysLeft">30</div><div class="hint" id="sRange">–</div></div>
+        <div class="stat"><div class="lbl">Workouts</div><div class="val" id="sWorkouts">0</div><div class="hint" id="sWorkoutGoal">Ziel: 14</div></div>
+        <div class="stat mint"><div class="lbl">Trainingsquote</div><div class="val" id="sQuote">0%</div><div class="hint">vom Wochenziel 3–4×</div></div>
+        <div class="stat gold"><div class="lbl">Bestleistung</div><div class="val" id="sBest">–</div><div class="hint" id="sBestDate">noch kein Workout</div></div>
+        <div class="stat"><div class="lbl">Ø Runden</div><div class="val" id="sAvg">–</div><div class="hint" id="sTrend">–</div></div>
+        <div class="stat blue"><div class="lbl">Prognose Ende</div><div class="val" id="sForecast">–</div><div class="hint">erwartete Bestleistung</div></div>
+        <div class="stat"><div class="lbl">Serie</div><div class="val" id="sStreak">0</div><div class="hint">Trainings am Stück</div></div>
+        <div class="stat"><div class="lbl">Nächstes Training</div><div class="val" id="sNext" style="font-size:22px">heute</div><div class="hint">alle ~2 Tage</div></div>
+      </div>
+      <div class="hr"></div>
+      <div class="row-between tiny muted" style="margin-bottom:6px"><span>Gesamtfortschritt Challenge</span><span id="sProgTxt">0 %</span></div>
+      <div class="bar mint"><span id="sProgBar"></span></div>
     </div>
 
+    <!-- Zielsystem -->
     <div class="card">
-      <h2>Weg zu Tom Holland</h2>
-      <p class="sub">27 Runden sind die Referenz</p>
-      <div class="row-between tiny muted" style="margin-bottom:5px">
-        <span id="thaName">Du</span><span id="thaPctA">0 %</span>
-      </div>
-      <div class="bar"><span id="thaBarA"></span></div>
-      <div class="row-between tiny muted" style="margin:12px 0 5px">
-        <span id="thbName">Gegner</span><span id="thaPctB">0 %</span>
-      </div>
-      <div class="bar rival"><span id="thaBarB"></span></div>
+      <h2>Ziele</h2>
+      <p class="sub">Trainingsziel &amp; Runden-Meilensteine</p>
+      <div id="goalList"></div>
     </div>
 
+    <!-- Prognosen -->
     <div class="card">
-      <div class="card-head"><h2>Letzte Workouts</h2><span class="pill" id="liveP">live</span></div>
-      <div id="recentList"></div>
+      <h2>Prognose</h2>
+      <p class="sub">Hochrechnung aus deinem bisherigen Verlauf</p>
+      <div class="grid g2">
+        <div class="stat"><div class="lbl">Workouts bis Ende</div><div class="val" id="fWorkouts">–</div><div class="hint" id="fWorkoutsHint">–</div></div>
+        <div class="stat"><div class="lbl">Max. Runden</div><div class="val" id="fMax">–</div><div class="hint">realistisch erreichbar</div></div>
+        <div class="stat" style="grid-column:1/-1"><div class="lbl">27 Runden geknackt am</div><div class="val" id="f27" style="font-size:22px">–</div><div class="hint" id="f27Hint">braucht mind. 3 Workouts</div></div>
+        <div class="stat" style="grid-column:1/-1"><div class="lbl">Entwicklung Ø</div><div class="val" id="fTrend" style="font-size:22px">–</div><div class="hint" id="fTrendHint">letzte 3 vs. vorherige 3 Workouts</div></div>
+      </div>
+    </div>
+
+    <!-- Motivation -->
+    <div class="card">
+      <div class="card-head"><h2>Motivation</h2><button class="btn ghost sm" id="newQuote">Neuer Spruch</button></div>
+      <div class="quote" id="quote">"Discipline beats motivation."</div>
+    </div>
+
+    <!-- Badge-Vorschau -->
+    <div class="card">
+      <div class="card-head"><h2>Abzeichen</h2><span class="pill" id="badgeCount">0 / 11</span></div>
+      <div class="badges" id="badgesDash"></div>
     </div>
   </section>
 
-  <!-- ========================== ERFASSEN ========================== -->
+  <!-- ==========================================================
+       VIEW: TRAINING ERFASSEN
+       ========================================================== -->
   <section class="view" id="view-log">
     <div class="card">
       <h2>Workout erfassen</h2>
-      <p class="sub">20 Min AMRAP · 5 Pull-Ups / 10 Push-Ups / 15 Air Squats</p>
+      <p class="sub">20 Min AMRAP · 5 Pull-Ups / 10 Push-Ups / 15 Squats</p>
       <label class="field"><span>Datum</span><input type="date" id="inDate"></label>
-      <label class="field"><span>Geschaffte Runden</span>
-        <input type="number" id="inRounds" min="0" max="80" step="0.5" inputmode="decimal" placeholder="z. B. 11"></label>
-      <label class="field"><span>Notiz (optional)</span>
-        <textarea id="inNotes" placeholder="Wie lief's? Pull-Ups mit Band? Müde?"></textarea></label>
-      <div class="grid g3" style="margin-bottom:14px">
-        <div class="stat"><div class="lbl">Pull-Ups</div><div class="val" id="cPull" style="font-size:21px">0</div></div>
-        <div class="stat"><div class="lbl">Push-Ups</div><div class="val" id="cPush" style="font-size:21px">0</div></div>
-        <div class="stat"><div class="lbl">Squats</div><div class="val" id="cSquat" style="font-size:21px">0</div></div>
+      <label class="field"><span>Geschaffte Runden</span><input type="number" id="inRounds" min="0" max="80" step="0.5" inputmode="decimal" placeholder="z. B. 11"></label>
+      <label class="field"><span>Notizen (optional)</span><textarea id="inNotes" placeholder="Wie lief's? Pull-Ups mit Band? Müde?"></textarea></label>
+      <div class="grid g4" style="margin-bottom:14px">
+        <div class="stat"><div class="lbl">Pull-Ups</div><div class="val" id="cPull" style="font-size:22px">0</div></div>
+        <div class="stat"><div class="lbl">Push-Ups</div><div class="val" id="cPush" style="font-size:22px">0</div></div>
+        <div class="stat"><div class="lbl">Squats</div><div class="val" id="cSquat" style="font-size:22px">0</div></div>
+        <div class="stat accent"><div class="lbl">Total Reps</div><div class="val" id="cTotal" style="font-size:22px">0</div></div>
       </div>
       <button class="btn" id="saveWorkout">Workout speichern</button>
     </div>
 
     <div class="card">
-      <h2>Deine Form</h2>
-      <div class="grid g3">
-        <div class="stat me"><div class="lbl">Bestleistung</div><div class="val" id="myBest">–</div></div>
-        <div class="stat"><div class="lbl">Ø letzte 3</div><div class="val" id="myAvg3">–</div></div>
-        <div class="stat"><div class="lbl">Workouts</div><div class="val" id="myCount">0</div></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================== VERLAUF ========================== -->
-  <section class="view" id="view-log-list">
-    <div class="card">
       <div class="card-head">
         <h2>Verlauf</h2>
-        <div class="seg" id="histFilter">
-          <button data-who="both" class="active">Beide</button>
-          <button data-who="me">Nur ich</button>
+        <div class="seg" id="logScope">
+          <button data-scope="season" class="active">Season</button>
+          <button data-scope="all">All Time</button>
         </div>
       </div>
-      <div id="histList"></div>
+      <label class="field"><span>Notizen durchsuchen</span><input type="text" id="searchNotes" placeholder="z. B. Band, müde, Rücken …"></label>
+      <div id="logList"></div>
     </div>
   </section>
 
-  <!-- ========================== CHARTS ========================== -->
+  <!-- ==========================================================
+       VIEW: TIMER
+       ========================================================== -->
+  <section class="view" id="view-timer">
+
+    <!-- Aufwärmen: 3 Phasen à 2:30 -->
+    <div class="card">
+      <div class="card-head">
+        <h2>Aufwärmen</h2>
+        <span class="pill" id="warmTotal">7:30 total</span>
+      </div>
+      <p class="sub">3 Phasen à 2:30 &middot; danach 2 Min verschnaufen, dann erst die AMRAP-Uhr starten</p>
+
+      <div class="warm-steps" id="warmSteps"></div>
+
+      <div class="warm-now">
+        <div class="warm-time" id="warmTime">2:30</div>
+        <div class="warm-phase" id="warmPhase">Bereit &middot; Phase 1</div>
+        <div class="bar"><span id="warmBar"></span></div>
+        <ul class="warm-list" id="warmList"></ul>
+        <p class="tiny muted" id="warmNote" style="margin:11px 0 0"></p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="wStart">Start</button>
+        <button class="btn ghost" id="wSkip">Phase &rsaquo;</button>
+        <button class="btn ghost" id="wReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>20-Minuten-AMRAP</h2>
+      <p class="sub">Timer starten, Runden mitzählen, danach direkt speichern</p>
+      <div class="timer-ring">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="var(--line)" stroke-width="9"/>
+          <circle id="ringProg" cx="60" cy="60" r="54" fill="none" stroke="url(#gr)" stroke-width="9"
+                  stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="0"/>
+          <defs><linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#FF5A1F"/><stop offset="100%" stop-color="#FF8A3D"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="inner">
+          <div class="timer-time" id="timerTime" style="font-size:40px">20:00</div>
+          <div class="tiny muted" id="timerState" style="font-weight:800;letter-spacing:.1em;text-transform:uppercase">Bereit</div>
+        </div>
+      </div>
+
+      <div class="counter">
+        <button id="rMinus">−</button>
+        <div class="num" id="rCount">0</div>
+        <button class="plus" id="rPlus">+</button>
+      </div>
+      <p class="tiny muted" style="text-align:center;margin:6px 0 0">Runden während des Workouts mitzählen</p>
+
+      <div class="btn-row">
+        <button class="btn" id="tStart">Start</button>
+        <button class="btn ghost" id="tPause">Pause</button>
+        <button class="btn ghost" id="tReset">Reset</button>
+      </div>
+      <button class="btn mint" style="margin-top:8px" id="tSave">Ergebnis speichern</button>
+    </div>
+
+    <div class="card">
+      <h2>Workout</h2>
+      <div class="grid g3" style="margin-top:12px">
+        <div class="stat"><div class="lbl">Pull-Ups</div><div class="val" style="font-size:22px">5</div><div class="hint">pro Runde</div></div>
+        <div class="stat"><div class="lbl">Push-Ups</div><div class="val" style="font-size:22px">10</div><div class="hint">pro Runde</div></div>
+        <div class="stat"><div class="lbl">Air Squats</div><div class="val" style="font-size:22px">15</div><div class="hint">pro Runde</div></div>
+      </div>
+      <p class="tiny muted" style="margin-top:12px">Referenz: Tom Holland 27 Runden · Anfänger 8–12 Runden</p>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       VIEW: CHARTS
+       ========================================================== -->
   <section class="view" id="view-charts">
     <div class="card">
-      <h2>Runden pro Training</h2>
-      <p class="sub">Beide Verläufe übereinander</p>
+      <div class="card-head">
+        <h2>Fortschritt</h2>
+        <div class="seg" id="chartScope">
+          <button data-scope="season" class="active">Season</button>
+          <button data-scope="all">All Time</button>
+        </div>
+      </div>
+      <p class="sub" id="chartHint">Runden pro Training inkl. Trendlinie</p>
       <div class="chart-box"><canvas id="ch1"></canvas></div>
     </div>
+    <div class="card"><h2>Ø Runden pro Woche</h2><div class="chart-box"><canvas id="ch2"></canvas></div></div>
+    <div class="card"><h2>Persönlicher Rekord im Verlauf</h2><div class="chart-box"><canvas id="ch3"></canvas></div></div>
+    <div class="card"><h2>Kumulierte Wiederholungen</h2><div class="chart-box"><canvas id="ch4"></canvas></div></div>
+    <div class="card"><h2>Trainings pro Woche</h2><div class="chart-box"><canvas id="ch5"></canvas></div></div>
+  </section>
+
+  <!-- ==========================================================
+       VIEW: KALENDER
+       ========================================================== -->
+  <section class="view" id="view-cal">
     <div class="card">
-      <h2>Ø Runden pro Woche</h2>
-      <div class="chart-box"><canvas id="ch2"></canvas></div>
+      <div class="card-head">
+        <button class="icon-btn" id="calPrev">‹</button>
+        <h2 id="calTitle" style="text-transform:none;font-size:16px;color:var(--text)">Monat</h2>
+        <button class="icon-btn" id="calNext">›</button>
+      </div>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid" style="margin-top:5px"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:rgba(0,229,160,.6)"></i>Training</span>
+        <span><i class="dot" style="background:rgba(255,200,87,.8)"></i>Persönlicher Rekord</span>
+        <span><i class="dot" style="background:var(--surface-2);border:1px solid var(--line)"></i>Ruhetag</span>
+        <span><i class="dot" style="background:transparent;border:2px solid var(--accent)"></i>Heute</span>
+      </div>
     </div>
     <div class="card">
-      <h2>Trainings gesamt</h2>
-      <p class="sub">Wer trainiert konsequenter?</p>
-      <div class="chart-box"><canvas id="ch3"></canvas></div>
+      <h2>Monatsbilanz</h2>
+      <div class="grid g3" style="margin-top:12px">
+        <div class="stat"><div class="lbl">Trainings</div><div class="val" id="mCount" style="font-size:24px">0</div></div>
+        <div class="stat mint"><div class="lbl">Ø Runden</div><div class="val" id="mAvg" style="font-size:24px">–</div></div>
+        <div class="stat gold"><div class="lbl">Bestes</div><div class="val" id="mBest" style="font-size:24px">–</div></div>
+      </div>
     </div>
   </section>
 
-  <!-- ========================== EINSTELLUNGEN ========================== -->
-  <section class="view" id="view-settings">
+  <!-- ==========================================================
+       VIEW: REKORDE / STATISTIK
+       ========================================================== -->
+  <section class="view" id="view-stats">
     <div class="card">
-      <div class="card-head"><h2>Verbindung</h2><span class="pill" id="connPill">–</span></div>
-      <p class="sub" id="connInfo">–</p>
-      <label class="field"><span>Challenge-Code</span><input type="text" id="setCode" readonly></label>
-      <div class="btn-row">
-        <button class="btn ghost sm" id="btnCopyCode">Code kopieren</button>
-        <button class="btn ghost sm" id="btnShare">Einladung teilen</button>
+      <div class="card-head">
+        <h2>Statistik</h2>
+        <div class="seg" id="statScope">
+          <button data-scope="season" class="active">Season</button>
+          <button data-scope="all">All Time</button>
+        </div>
+      </div>
+      <div class="grid g2" id="statGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Persönliche Rekorde</h2>
+      <p class="sub" id="prScopeHint">Aktuelle Season</p>
+      <div class="grid g2" id="prGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Abzeichen</h2><span class="pill" id="badgeCount2">0 / 11</span></div>
+      <div class="badges" id="badgesAll"></div>
+    </div>
+
+    <div class="card">
+      <h2>Seasons</h2>
+      <p class="sub">Jede abgeschlossene Phase bleibt dauerhaft gespeichert</p>
+      <div class="table-scroll">
+        <table id="seasonTable">
+          <thead><tr>
+            <th>Season</th><th>Zeitraum</th><th class="num">WO</th><th class="num">Ø</th><th class="num">Best</th><th class="num">Reps</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ==========================================================
+       VIEW: DUELL
+       ========================================================== -->
+  <section class="view" id="view-duel">
+
+    <!-- Nicht verbunden: Einrichtung -->
+    <div class="card" id="duelSetup">
+      <h2>Duell starten</h2>
+      <p class="sub">Vergleich dich live mit einem Kumpel – ihr teilt euch einen Challenge-Code</p>
+      <label class="field"><span>Challenge-Code</span>
+        <input type="text" id="dCode" maxlength="10" placeholder="z. B. TH7K2M" autocapitalize="characters" autocomplete="off"></label>
+      <label class="field"><span>Dein Name</span>
+        <input type="text" id="dName" maxlength="18" placeholder="z. B. Jan" autocomplete="off"></label>
+      <div class="field"><span>Du bist</span>
+        <div class="pick"><button type="button" data-slot="a">Athlet A</button><button type="button" data-slot="b">Athlet B</button></div>
+      </div>
+      <button class="btn" id="dJoin">Duell beitreten</button>
+      <button class="btn ghost" style="margin-top:8px" id="dNew">Neuen Code erzeugen</button>
+      <p class="tiny muted" style="margin-top:12px" id="dHint">Deine bisherigen Workouts werden automatisch mitgenommen.</p>
+    </div>
+
+    <!-- Verbunden -->
+    <div id="duelLive" style="display:none">
+      <div class="versus">
+        <div class="vs-head">
+          <div class="vs-side me"><div class="who" id="vsNameA">Du</div><div class="score" id="vsScoreA">–</div><div class="unit">Bestleistung</div></div>
+          <div class="vs-mid">VS</div>
+          <div class="vs-side rival"><div class="who" id="vsNameB">Gegner</div><div class="score" id="vsScoreB">–</div><div class="unit">Bestleistung</div></div>
+        </div>
+        <div class="vs-bar"><i class="me" id="vsBarA" style="width:50%"></i><i class="rival" id="vsBarB" style="width:50%"></i></div>
+        <div class="vs-legend"><span id="vsLegA">–</span><span id="vsLegB">–</span></div>
+        <div class="vs-lead" id="vsLead">–</div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Direktvergleich</h2>
+          <div class="seg" id="duelScope">
+            <button data-scope="all" class="active">Gesamt</button>
+            <button data-scope="30">30 Tage</button>
+          </div>
+        </div>
+        <table class="duel-table">
+          <thead><tr><th></th>
+            <th><span class="vdot me"></span><span id="thA">Du</span></th>
+            <th><span class="vdot rival"></span><span id="thB">Gegner</span></th></tr></thead>
+          <tbody id="duelBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Weg zu Tom Holland</h2>
+        <p class="sub">27 Runden sind die Referenz</p>
+        <div class="row-between tiny muted" style="margin-bottom:5px"><span id="thaName">Du</span><span id="thaPctA">0 %</span></div>
+        <div class="bar"><span id="thaBarA"></span></div>
+        <div class="row-between tiny muted" style="margin:12px 0 5px"><span id="thbName">Gegner</span><span id="thaPctB">0 %</span></div>
+        <div class="bar"><span id="thaBarB" style="background:linear-gradient(135deg,#2D7FE0,#7FC0FF)"></span></div>
+      </div>
+
+      <div class="card">
+        <h2>Verlauf im Vergleich</h2>
+        <div class="chart-box"><canvas id="chDuel"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Letzte Workouts</h2><span class="pill" id="duelPill">live</span></div>
+        <div id="duelRecent"></div>
+      </div>
+
+      <div class="card">
+        <h2>Verbindung</h2>
+        <p class="sub" id="duelConnInfo">–</p>
+        <div class="code-box" id="duelCodeBox">–</div>
+        <div class="grid g2">
+          <button class="btn ghost sm" style="width:100%" id="dShare">Einladung teilen</button>
+          <button class="btn ghost sm" style="width:100%" id="dLeave">Duell verlassen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       VIEW: DATEN & EINSTELLUNGEN
+       ========================================================== -->
+  <section class="view" id="view-data">
+    <div class="card">
+      <h2>Challenge steuern</h2>
+      <p class="sub" id="seasonInfo">–</p>
+      <div class="grid g2">
+        <button class="btn ghost sm" style="width:100%" id="btnExtend">+30 Tage anhängen</button>
+        <button class="btn ghost sm" style="width:100%" id="btnUnlimited">Unbegrenzt weitermachen</button>
+        <button class="btn sm" style="width:100%;grid-column:1/-1" id="btnNewSeason">Neue Season starten</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Dein Profil</h2>
-      <label class="field"><span>Anzeigename</span><input type="text" id="setName" maxlength="18" placeholder="z. B. Jan"></label>
-      <label class="field"><span>Du bist</span>
-        <select id="setSlot"><option value="a">Athlet A</option><option value="b">Athlet B</option></select></label>
-      <button class="btn ghost sm" id="btnSaveProfile">Profil speichern</button>
-    </div>
-
-    <div class="card">
-      <h2>Daten</h2>
-      <p class="sub">Workouts aus dem lokalen Tracker übernehmen oder alles sichern</p>
-      <div class="btn-row">
-        <button class="btn ghost sm" id="btnImport">JSON importieren</button>
-        <button class="btn ghost sm" id="btnExport">Export JSON</button>
+      <h2>Export &amp; Import</h2>
+      <p class="sub">Alle Daten liegen lokal im Browser (LocalStorage)</p>
+      <div class="grid g2">
+        <button class="btn ghost sm" style="width:100%" id="btnExport">Export JSON</button>
+        <button class="btn ghost sm" style="width:100%" id="btnImport">Import JSON</button>
+        <button class="btn ghost sm" style="width:100%" id="btnCsv">Export CSV</button>
+        <button class="btn ghost sm" style="width:100%" id="btnBackup">Backup erstellen</button>
+        <button class="btn ghost sm" style="width:100%;grid-column:1/-1" id="btnRestore">Backup wiederherstellen</button>
       </div>
       <input type="file" id="fileInput" accept="application/json" hidden>
+      <p class="tiny muted" id="backupInfo" style="margin-top:10px">Noch kein Backup vorhanden.</p>
+    </div>
+
+    <div class="card">
+      <h2>Einstellungen</h2>
+      <label class="field"><span>Trainingsziel pro 30 Tage</span><input type="number" id="setGoal" min="1" max="30" value="14"></label>
+      <label class="field"><span>Signalton am Timer-Ende</span>
+        <select id="setSound"><option value="1">An</option><option value="0">Aus</option></select></label>
       <div class="hr"></div>
-      <button class="btn danger sm" id="btnWipe">Meine Workouts löschen</button>
+      <button class="btn danger" id="btnReset">Alle Daten löschen</button>
     </div>
 
     <div class="card">
       <h2>Über</h2>
-      <p class="tiny muted">Duell-Tracker zur Tom Holland Challenge: 20 Min AMRAP mit 5 Pull-Ups,
-      10 Push-Ups und 15 Air Squats pro Runde. Zwei Athleten teilen sich einen Challenge-Code und
-      sehen die Workouts des anderen in Echtzeit.</p>
+      <p class="tiny muted">Tom Holland Challenge Tracker · 20 Min AMRAP: 5 Pull-Ups, 10 Push-Ups, 15 Air Squats.
+      Alles läuft offline in dieser einzelnen HTML-Datei. Sichere regelmässig ein JSON-Backup –
+      wird der Browser-Speicher gelöscht, sind die Daten sonst weg.</p>
     </div>
   </section>
 </main>
 
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
 <nav class="tabs">
   <div class="tabs-inner">
-    <button class="tab active" data-view="duel"><span class="ic">⚔️</span>Duell</button>
-    <button class="tab" data-view="log"><span class="ic">✏️</span>Erfassen</button>
-    <button class="tab" data-view="log-list"><span class="ic">📋</span>Verlauf</button>
+    <button class="tab active" data-view="dash"><span class="ic">📊</span>Dashboard</button>
+    <button class="tab" data-view="log"><span class="ic">✏️</span>Training</button>
+    <button class="tab" data-view="timer"><span class="ic">⏱️</span>Timer</button>
     <button class="tab" data-view="charts"><span class="ic">📈</span>Charts</button>
-    <button class="tab" data-view="settings"><span class="ic">⚙️</span>Mehr</button>
+    <button class="tab" data-view="cal"><span class="ic">📅</span>Kalender</button>
+    <button class="tab" data-view="stats"><span class="ic">🏆</span>Rekorde</button>
+    <button class="tab" data-view="duel"><span class="ic">⚔️</span>Duell</button>
+    <button class="tab" data-view="data"><span class="ic">⚙️</span>Daten</button>
   </div>
 </nav>
 
-<!-- Onboarding -->
-<div class="gate" id="gate">
-  <div class="gate-inner">
-    <div class="logo">⚔️</div>
-    <h2>Tom Holland Duell</h2>
-    <p class="lead" id="gateLead">Gib den Challenge-Code ein, den ihr euch teilt – oder starte eine neue Challenge und schick den Code deinem Gegner.</p>
-
-    <label class="field"><span>Challenge-Code</span>
-      <input type="text" id="gateCode" maxlength="10" placeholder="z. B. TH7K2M" autocapitalize="characters" autocomplete="off"></label>
-    <label class="field"><span>Dein Name</span>
-      <input type="text" id="gateName" maxlength="18" placeholder="z. B. Jan" autocomplete="off"></label>
-    <div class="field"><span>Du bist</span>
-      <div class="pick">
-        <button type="button" data-slot="a" id="pickA">Athlet A</button>
-        <button type="button" data-slot="b" id="pickB">Athlet B</button>
-      </div>
-    </div>
-    <button class="btn" id="gateJoin">Challenge beitreten</button>
-    <button class="btn ghost" style="margin-top:8px" id="gateNew">Neue Challenge starten</button>
-    <p class="tiny muted" style="text-align:center;margin-top:14px" id="gateHint"></p>
-  </div>
-</div>
-
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 <div id="toasts"></div>
+<canvas id="confetti"></canvas>
 
 <script>
 "use strict";
 /* ============================================================
-   FIREBASE-KONFIGURATION
+   FIREBASE-KONFIGURATION (nur für das Duell nötig)
    ------------------------------------------------------------
-   Die Werte kommen aus der Firebase Console:
-   Projekt-Einstellungen → Allgemein → Meine Apps → Web-App → SDK-Konfiguration.
-   Solange hier die Platzhalter stehen, läuft die Seite im Offline-Modus
-   (Daten nur in diesem Browser) – gut zum Ausprobieren, aber ohne Duell.
+   Werte aus der Firebase Console: Projekt-Einstellungen → Allgemein →
+   Meine Apps → Web-App → SDK-Konfiguration. Solange hier die Platzhalter
+   stehen, funktioniert der Tracker vollständig – nur der Duell-Tab
+   bleibt gesperrt. Siehe README.md.
    ============================================================ */
 const FIREBASE_CONFIG = {
   apiKey:            "DEIN_API_KEY",
@@ -478,620 +848,1685 @@ const FIREBASE_CONFIG = {
 };
 const CLOUD_READY = !FIREBASE_CONFIG.apiKey.startsWith("DEIN");
 
-/* ---------- Konstanten & Helfer ---------- */
+/* ============================================================
+   TOM HOLLAND CHALLENGE TRACKER
+   Reines HTML/CSS/JS · Daten im LocalStorage · keine Server
+   ------------------------------------------------------------
+   Aufbau:
+   1  Konstanten & Helfer
+   2  State (Laden/Speichern/Migration)
+   3  Berechnungen (Stats, Streaks, Prognosen)
+   4  Rendering (Dashboard, Log, Kalender, Stats, Charts)
+   5  Timer
+   6  Badges, Toasts, Konfetti
+   7  Daten-Export/Import, Season-Lifecycle
+   8  Init & Events
+   ============================================================ */
+
+/* ---------- 1. Konstanten & Helfer ---------- */
+const TOM = 27;                      // Tom Hollands Referenz
 const PER_ROUND = { pull:5, push:10, squat:15 };
 const REPS_PER_ROUND = 30;
-const HOLLAND = 27;
-const LS_KEY = "thDuel.v1";
+const LS_KEY = 'thc_data_v1';
+const LS_BACKUPS = 'thc_backups_v1';
+const DEFAULT_DURATION = 30;
+
+const QUOTES = [
+  "Discipline beats motivation. Jeden einzelnen Tag.",
+  "Die Runde, die weh tut, ist die, die zählt.",
+  "27 Runden sind nicht Talent – das sind Wiederholungen.",
+  "Nicht schneller als gestern? Egal. Aufgetaucht bist du trotzdem.",
+  "Konstanz schlägt Intensität. Immer.",
+  "Dein einziger Gegner ist dein letztes Workout.",
+  "Kein Workout war je umsonst.",
+  "20 Minuten. Mehr will niemand von dir.",
+  "Pull-Ups lügen nicht.",
+  "Heute ist wieder so ein Tag, an dem du besser wirst.",
+  "Fang an, auch wenn du keine Lust hast. Vor allem dann.",
+  "Kleine Schritte, oft wiederholt, sehen von aussen aus wie Talent."
+];
+
+const BADGES = [
+  { id:'first',  ic:'🔥', t:'Erstes Training',  test:s => s.count >= 1 },
+  { id:'w5',     ic:'💪', t:'5 Trainings',      test:s => s.count >= 5 },
+  { id:'w10',    ic:'🏅', t:'10 Trainings',     test:s => s.count >= 10 },
+  { id:'w15',    ic:'⚡', t:'15 Trainings',     test:s => s.count >= 15 },
+  { id:'w20',    ic:'🛡️', t:'20 Trainings',     test:s => s.count >= 20 },
+  { id:'w30',    ic:'👑', t:'30 Trainings',     test:s => s.count >= 30 },
+  { id:'pr',     ic:'📈', t:'Neuer Rekord',     test:s => s.prBeaten },
+  { id:'r15',    ic:'🥉', t:'15 Runden',        test:s => s.best >= 15 },
+  { id:'r20',    ic:'🥈', t:'20 Runden',        test:s => s.best >= 20 },
+  { id:'r25',    ic:'🥇', t:'25 Runden',        test:s => s.best >= 25 },
+  { id:'tom',    ic:'🏆', t:'Tom geschlagen',   test:s => s.best >= TOM }
+];
+
+const LEVELS = [
+  { min:0,  name:'Einsteiger',     ic:'🎯' },
+  { min:8,  name:'Anfänger',       ic:'🟢' },
+  { min:13, name:'Fortgeschritten',ic:'🔵' },
+  { min:18, name:'Athlet',         ic:'🟠' },
+  { min:23, name:'Elite',          ic:'🟣' },
+  { min:27, name:'Holland-Level',  ic:'🏆' }
+];
 
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-const pad = n => String(n).padStart(2,"0");
-const toStr = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+
+const pad = n => String(n).padStart(2,'0');
 const todayStr = () => toStr(new Date());
-function fromStr(s){ const [y,m,d] = String(s).split("-").map(Number); return new Date(y, m-1, d); }
-function fmtDate(s){ const d = fromStr(s); return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear(); }
-function weekdayShort(s){ return ["So","Mo","Di","Mi","Do","Fr","Sa"][fromStr(s).getDay()]; }
-function nf(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".",","); }
-function isoWeekKey(s){
-  const d = fromStr(s); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  t.setDate(t.getDate() + 4 - (t.getDay()||7));
-  const y0 = new Date(t.getFullYear(),0,1);
-  return t.getFullYear()+"-KW"+pad(Math.ceil(((t-y0)/86400000 + 1)/7));
-}
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-function newCode(){
-  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // ohne I/O/0/1 – am Telefon vorlesbar
-  let c = "TH"; for(let i=0;i<4;i++) c += A[(Math.random()*A.length)|0];
-  return c;
-}
-function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function toStr(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fromStr(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(s, n){ const d = fromStr(s); d.setDate(d.getDate()+n); return toStr(d); }
+function daysBetween(a, b){ return Math.round((fromStr(b) - fromStr(a)) / 86400000); }
+function fmtDate(s){ const d = fromStr(s); return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear(); }
+function fmtShort(s){ const d = fromStr(s); return pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'; }
+function weekdayShort(s){ return ['So','Mo','Di','Mi','Do','Fr','Sa'][fromStr(s).getDay()]; }
+function round1(n){ return Math.round(n*10)/10; }
+function nf(n){ return new Intl.NumberFormat('de-CH').format(Math.round(n)); }
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
-/* ---------- lokaler Zustand ---------- */
-let me = { code:"", slot:"a", name:"" };
-let workouts = [];                    // [{id, slot, date, rounds, notes, ts}]
-let names = { a:"Athlet A", b:"Athlet B" };
-let ui = { view:"duel", theme:"dark", duelScope:"all", histWho:"both" };
-let charts = {};
-
-function loadLocal(){
-  try{
-    const raw = localStorage.getItem(LS_KEY);
-    if(raw){
-      const d = JSON.parse(raw);
-      me = Object.assign(me, d.me || {});
-      ui.theme = d.theme || "dark";
-      if(!CLOUD_READY){ workouts = d.workouts || []; names = d.names || names; }
-    }
-  }catch(e){ /* Speicher gesperrt (privates Fenster) – dann eben ohne */ }
-}
-function saveLocal(){
-  try{
-    localStorage.setItem(LS_KEY, JSON.stringify({
-      me, theme:ui.theme,
-      workouts: CLOUD_READY ? [] : workouts,
-      names:    CLOUD_READY ? null : names
-    }));
-  }catch(e){}
+/** ISO-Kalenderwoche als sortierbarer Schlüssel, z. B. "2026-KW38" */
+function isoWeekKey(dateStr){
+  const d = fromStr(dateStr);
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
+  return t.getUTCFullYear() + '-KW' + pad(week);
 }
 
-/* ============================================================
-   SPEICHER-ADAPTER
-   Zwei Implementierungen mit identischer Schnittstelle:
-   CloudStore (Firestore, live) und LocalStore (nur dieser Browser).
-   ============================================================ */
-let store = null;
-let onData = () => {};
-
-const LocalStore = {
-  kind:"local",
-  async init(){ onData(); return true; },
-  async addWorkout(w){ workouts.push(w); saveLocal(); onData(); },
-  async delWorkout(id){ workouts = workouts.filter(x => x.id !== id); saveLocal(); onData(); },
-  async setName(slot, name){ names[slot] = name; saveLocal(); onData(); },
-  async wipeMine(){ workouts = workouts.filter(w => w.slot !== me.slot); saveLocal(); onData(); }
+/* ---------- 2. State ---------- */
+let state = null;
+let ui = {
+  view: 'dash',
+  scope: 'season',        // 'season' | 'all' (Dashboard/Charts/Stats)
+  logScope: 'season',
+  calMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  search: ''
 };
 
-const CloudStore = {
-  kind:"cloud", fb:null, unsubW:null, unsubM:null,
-  async init(){
-    const [{ initializeApp }, auth, fs] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
-      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
-    ]);
-    const app = initializeApp(FIREBASE_CONFIG);
-    const a = auth.getAuth(app);
-    await auth.signInAnonymously(a);                 // unsichtbar – nur damit die Regeln greifen
-    const db = fs.getFirestore(app);
-    this.fb = { fs, db, uid:a.currentUser.uid };
-
-    const duelRef = fs.doc(db, "duels", me.code);
-    await fs.setDoc(duelRef, { touched: fs.serverTimestamp() }, { merge:true });
-
-    this.unsubM = fs.onSnapshot(duelRef, snap => {
-      const d = snap.data() || {};
-      names = { a: d.nameA || "Athlet A", b: d.nameB || "Athlet B" };
-      onData();
-    });
-    this.unsubW = fs.onSnapshot(fs.collection(db, "duels", me.code, "workouts"), snap => {
-      workouts = snap.docs.map(x => Object.assign({ id:x.id }, x.data()));
-      onData();
-    });
-    return true;
-  },
-  async addWorkout(w){
-    const { fs, db } = this.fb;
-    await fs.setDoc(fs.doc(db, "duels", me.code, "workouts", w.id), {
-      slot:w.slot, date:w.date, rounds:w.rounds, notes:w.notes, ts:w.ts
-    });
-  },
-  async delWorkout(id){
-    const { fs, db } = this.fb;
-    await fs.deleteDoc(fs.doc(db, "duels", me.code, "workouts", id));
-  },
-  async setName(slot, name){
-    const { fs, db } = this.fb;
-    await fs.setDoc(fs.doc(db, "duels", me.code), { [slot === "a" ? "nameA" : "nameB"]: name }, { merge:true });
-  },
-  async wipeMine(){
-    const { fs, db } = this.fb;
-    const mine = workouts.filter(w => w.slot === me.slot);
-    const batch = fs.writeBatch(db);
-    mine.forEach(w => batch.delete(fs.doc(db, "duels", me.code, "workouts", w.id)));
-    await batch.commit();
-  }
-};
-
-/* ============================================================
-   AUSWERTUNG
-   ============================================================ */
-function bySlot(slot, scope){
-  let list = workouts.filter(w => w.slot === slot);
-  if(scope === "30"){
-    const limit = toStr(new Date(Date.now() - 30*86400000));
-    list = list.filter(w => w.date >= limit);
-  }
-  return list.sort((x,y) => x.date.localeCompare(y.date) || (x.ts||0) - (y.ts||0));
+function freshSeason(number, startDate, duration){
+  return { id:number, number, startDate, durationDays:duration,
+           endDate: duration ? addDays(startDate, duration-1) : null,
+           mode: duration ? 'challenge' : 'unlimited', status:'active' };
 }
-function summary(slot, scope){
-  const l = bySlot(slot, scope);
-  const rounds = l.map(w => +w.rounds || 0);
-  const best = rounds.length ? Math.max(...rounds) : 0;
-  const avg  = rounds.length ? rounds.reduce((a,b) => a+b, 0)/rounds.length : 0;
-  const last3 = rounds.slice(-3);
+
+function defaultState(){
+  const t = todayStr();
   return {
-    list:l, n:l.length, best, avg,
-    avg3: last3.length ? last3.reduce((a,b) => a+b, 0)/last3.length : 0,
-    reps: rounds.reduce((a,b) => a+b, 0) * REPS_PER_ROUND,
-    last: l.length ? l[l.length-1] : null
+    version: 1,
+    createdAt: t,
+    theme: 'dark',
+    seasons: [ freshSeason(1, t, DEFAULT_DURATION) ],
+    currentSeasonId: 1,
+    workouts: [],
+    badges: {},                       // id -> Datum des Freischaltens
+    settings: { goalWorkouts: 14, sound: true },
+    duel: null,                       // { code, slot, name } sobald einem Duell beigetreten
+    duelRemoved: []                   // IDs gelöschter Workouts – damit sie nicht vom anderen Gerät zurückkommen
   };
 }
-/** Trainings-Serie in Wochen: wie viele Wochen in Folge mind. 1 Workout */
-function weekStreak(slot){
-  const keys = new Set(bySlot(slot,"all").map(w => isoWeekKey(w.date)));
-  let n = 0, d = new Date();
-  for(;;){
-    if(keys.has(isoWeekKey(toStr(d)))) n++;
-    else if(n > 0 || keys.size === 0) break;
-    else if(n === 0 && d < new Date(Date.now() - 8*86400000)) break;
-    d.setDate(d.getDate() - 7);
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){ state = defaultState(); save(); return; }
+    const data = JSON.parse(raw);
+    state = Object.assign(defaultState(), data);
+    state.settings = Object.assign({ goalWorkouts:14, sound:true }, data.settings || {});
+    if(!Array.isArray(state.seasons) || !state.seasons.length) state.seasons = defaultState().seasons;
+    if(!Array.isArray(state.workouts)) state.workouts = [];
+    if(!state.badges || typeof state.badges !== 'object') state.badges = {};
+    if(state.duel && (!state.duel.code || !state.duel.slot)) state.duel = null;
+    if(!Array.isArray(state.duelRemoved)) state.duelRemoved = [];
+  }catch(e){
+    console.error('Daten defekt, starte neu:', e);
+    state = defaultState();
   }
-  return n;
+}
+let storageWarned = false;
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+  catch(e){
+    if(!storageWarned){ storageWarned = true; toast('⚠️ Kein Speicherzugriff – Daten gehen beim Schliessen verloren'); }
+  }
 }
 
-/* ============================================================
-   RENDERING
-   ============================================================ */
+const currentSeason = () => state.seasons.find(s => s.id === state.currentSeasonId) || state.seasons[state.seasons.length-1];
+const seasonWorkouts = id => state.workouts.filter(w => w.seasonId === id).sort(byDate);
+const allWorkouts = () => state.workouts.slice().sort(byDate);
+function byDate(a,b){ return a.date === b.date ? (a.created||0)-(b.created||0) : (a.date < b.date ? -1 : 1); }
+function scopedWorkouts(scope){ return (scope || ui.scope) === 'all' ? allWorkouts() : seasonWorkouts(state.currentSeasonId); }
+
+/* ---------- 3. Berechnungen ---------- */
+
+/** Kernkennzahlen für eine Workout-Liste */
+function computeStats(list){
+  const s = {
+    count:list.length, rounds:0, best:0, bestDate:null, avg:0,
+    pull:0, push:0, squat:0, reps:0,
+    firstDate:null, lastDate:null, prBeaten:false, bestGain:0, bestGainDate:null,
+    longestStreak:0, currentStreak:0, bestWeek:0, bestWeekKey:null, prDates:[]
+  };
+  if(!list.length) return s;
+
+  let running = 0;
+  list.forEach((w, i) => {
+    s.rounds += w.rounds;
+    s.pull  += w.rounds * PER_ROUND.pull;
+    s.push  += w.rounds * PER_ROUND.push;
+    s.squat += w.rounds * PER_ROUND.squat;
+    if(w.rounds > running){
+      if(i > 0){ s.prBeaten = true; }
+      running = w.rounds;
+      s.prDates.push(w.date);
+    }
+    if(w.rounds > s.best){ s.best = w.rounds; s.bestDate = w.date; }
+    if(i > 0){
+      const gain = w.rounds - list[i-1].rounds;
+      if(gain > s.bestGain){ s.bestGain = gain; s.bestGainDate = w.date; }
+    }
+  });
+  s.reps = s.pull + s.push + s.squat;
+  s.avg = round1(s.rounds / list.length);
+  s.firstDate = list[0].date;
+  s.lastDate = list[list.length-1].date;
+
+  // Serien: aufeinanderfolgende Workouts mit maximal 3 Tagen Abstand
+  let cur = 1, longest = 1;
+  for(let i=1;i<list.length;i++){
+    const gap = daysBetween(list[i-1].date, list[i].date);
+    if(gap <= 3){ cur++; } else { cur = 1; }
+    longest = Math.max(longest, cur);
+  }
+  s.longestStreak = longest;
+  s.currentStreak = daysBetween(s.lastDate, todayStr()) <= 3 ? cur : 0;
+
+  // Meiste Trainings in einer Kalenderwoche
+  const weeks = {};
+  list.forEach(w => { const k = isoWeekKey(w.date); weeks[k] = (weeks[k]||0)+1; });
+  Object.entries(weeks).forEach(([k,v]) => { if(v > s.bestWeek){ s.bestWeek = v; s.bestWeekKey = k; } });
+
+  return s;
+}
+
+/** Einfache lineare Regression y = a + b*x über die Workout-Reihenfolge */
+function trend(list){
+  const n = list.length;
+  if(n < 2) return { slope:0, intercept: n ? list[0].rounds : 0, ok:false };
+  let sx=0, sy=0, sxy=0, sxx=0;
+  list.forEach((w,i) => { sx+=i; sy+=w.rounds; sxy+=i*w.rounds; sxx+=i*i; });
+  const den = n*sxx - sx*sx;
+  if(den === 0) return { slope:0, intercept: sy/n, ok:false };
+  const slope = (n*sxy - sx*sy)/den;
+  return { slope, intercept: (sy - slope*sx)/n, ok:true };
+}
+
+/** Status der laufenden Challenge (Tage, Fortschritt, Ziel) */
+function seasonStatus(){
+  const s = currentSeason();
+  const t = todayStr();
+  // Liegt ein Workout vor dem Season-Start (z. B. nachgetragen), zählt dieses Datum als Start
+  const list = seasonWorkouts(s.id);
+  const start = (list.length && list[0].date < s.startDate) ? list[0].date : s.startDate;
+  const elapsed = Math.max(1, daysBetween(start, t) + 1);
+  const unlimited = s.mode === 'unlimited' || !s.endDate;
+  const duration = unlimited ? elapsed : s.durationDays;
+  const daysLeft = unlimited ? null : Math.max(0, daysBetween(t, s.endDate) + 1);
+  const progress = unlimited ? 0 : clamp(((duration - (daysLeft||0)) / duration) * 100, 0, 100);
+  const goal = unlimited
+    ? Math.max(1, Math.round(state.settings.goalWorkouts * elapsed / 30))
+    : Math.max(1, Math.round(state.settings.goalWorkouts * duration / 30));
+  const expected = Math.max(1, state.settings.goalWorkouts * Math.min(elapsed, duration) / 30); // Soll bis heute
+  return { season:s, unlimited, elapsed, duration, daysLeft, progress, goal, expected };
+}
+
+/** Prognosen: Workouts bis Ende, erreichbare Runden, Datum für 27 Runden */
+function forecast(){
+  const st = seasonStatus();
+  const list = seasonWorkouts(state.currentSeasonId);
+  const all  = allWorkouts();
+  const tr = trend(list.length >= 3 ? list : all);
+  // Trainingsfrequenz, hart begrenzt auf max. 1 Workout pro Tag
+  const perDay = clamp(list.length ? list.length / st.elapsed : 0, 0, 1);
+  // Fortschritt flacht mit der Zeit ab -> gedämpfte Steigung statt roher Regression
+  const effSlope = tr.ok ? tr.slope * 0.6 : 0;
+
+  const remainingDays = st.unlimited ? 30 : (st.daysLeft || 0);
+  const expectedMore = Math.min(remainingDays, Math.round(perDay * remainingDays));
+  const expectedTotal = list.length + expectedMore;
+
+  const stats = computeStats(list.length ? list : all);
+  let maxRounds = stats.best;
+  if(effSlope > 0){
+    maxRounds = clamp(Math.round(stats.best + effSlope * expectedMore), stats.best, 60);
+  }
+
+  // Wann 27 Runden? effSlope = gedämpfter Runden-Zuwachs pro Workout
+  let date27 = null, hint27 = '';
+  const base = list.length ? list[list.length-1].rounds : 0;
+  if(stats.best >= TOM){ hint27 = 'Bereits geschafft. Respekt.'; }
+  else if(effSlope <= 0.02){ hint27 = 'Trend noch zu flach – mehr Daten nötig.'; }
+  else{
+    const needWorkouts = Math.ceil((TOM - Math.max(base, stats.best)) / effSlope);
+    const perDaySafe = perDay > 0 ? perDay : (state.settings.goalWorkouts/30);
+    const days = Math.ceil(needWorkouts / perDaySafe);
+    if(days > 0 && days < 3650){
+      date27 = addDays(todayStr(), days);
+      hint27 = 'noch ca. ' + nf(needWorkouts) + ' Workouts bei aktuellem Tempo';
+    } else { hint27 = 'Zeitraum nicht sinnvoll berechenbar.'; }
+  }
+
+  // Ø-Entwicklung: letzte 3 vs. vorherige 3 Workouts
+  let trendTxt = '–', trendHint = 'braucht mind. 4 Workouts';
+  const src = list.length >= 4 ? list : all;
+  if(src.length >= 4){
+    const last3 = src.slice(-3), prev3 = src.slice(-6, -3);
+    if(prev3.length){
+      const a = last3.reduce((x,w)=>x+w.rounds,0)/last3.length;
+      const b = prev3.reduce((x,w)=>x+w.rounds,0)/prev3.length;
+      const diff = round1(a-b);
+      trendTxt = (diff > 0 ? '+' : '') + diff + ' Runden';
+      trendHint = 'Ø ' + round1(b) + ' → Ø ' + round1(a) + (diff > 0 ? ' · aufwärts 🚀' : diff < 0 ? ' · leichter Rücksetzer' : ' · stabil');
+    }
+  }
+
+  return { st, tr, expectedMore, expectedTotal, maxRounds, date27, hint27, trendTxt, trendHint, perDay };
+}
+
+function levelFor(best){
+  let l = LEVELS[0];
+  LEVELS.forEach(x => { if(best >= x.min) l = x; });
+  return l;
+}
+
+function motivationMsg(best){
+  if(best <= 0) return "Noch kein Workout erfasst. Der erste Eintrag ist der schwerste.";
+  const pct = Math.round(best/TOM*100);
+  const left = TOM - best;
+  if(best >= TOM) return "Du hast Tom Holland geschlagen. Willkommen in der Elite-Zone. 🏆";
+  if(best >= 23) return "Nur noch " + left + " Runden bis zur Elite-Zone. Das ist greifbar nah.";
+  if(best >= 18) return "Du hast bereits " + pct + " % von Tom Hollands Bestleistung erreicht – Athleten-Niveau.";
+  if(best >= 13) return "Du hast bereits " + pct + " % geschafft. Noch " + left + " Runden bis 27.";
+  if(best >= 8)  return "Solides Anfänger-Niveau (8–12 Runden). " + pct + " % von Tom Holland.";
+  return "Start gemacht: " + pct + " % von Tom Hollands 27 Runden. Jede Runde zählt.";
+}
+
+/* ---------- 4. Rendering ---------- */
 function renderAll(){
-  const other = me.slot === "a" ? "b" : "a";
-  $("#vsNameA").textContent = names[me.slot];
-  $("#vsNameB").textContent = names[other];
-  $("#thA").textContent = names[me.slot];
-  $("#thB").textContent = names[other];
-  $("#thaName").textContent = names[me.slot];
-  $("#thbName").textContent = names[other];
-
-  renderVersus(me.slot, other);
-  renderDuelTable(me.slot, other);
-  renderHolland(me.slot, other);
-  renderRecent();
-  renderHistory();
-  renderMyForm();
-  if(ui.view === "charts") renderCharts();
+  renderHeader();
+  renderHero();
+  renderSeasonCard();
+  renderGoals();
+  renderForecast();
+  renderBadges();
+  renderLogList();
+  renderCalendar();
+  renderStats();
+  renderSeasonTable();
+  renderDataView();
+  if(ui.view === 'charts') renderCharts();
 }
 
-function renderVersus(A, B){
-  const a = summary(A, "all"), b = summary(B, "all");
-  $("#vsScoreA").textContent = a.n ? nf(a.best) : "–";
-  $("#vsScoreB").textContent = b.n ? nf(b.best) : "–";
-  $("#vsLegA").textContent = a.n ? a.n + " Workouts" : "noch keins";
-  $("#vsLegB").textContent = b.n ? b.n + " Workouts" : "noch keins";
-
-  const sum = a.best + b.best;
-  const pa = sum > 0 ? (a.best/sum*100) : 50;
-  $("#vsBarA").style.width = pa + "%";
-  $("#vsBarB").style.width = (100-pa) + "%";
-
-  const diff = +(a.best - b.best).toFixed(1);
-  let msg;
-  if(!a.n && !b.n)      msg = "Noch keine Workouts – tragt euer erstes Training ein.";
-  else if(!b.n)         msg = names[B] + " hat noch nicht vorgelegt. Dein Vorsprung: " + nf(a.best) + " Runden.";
-  else if(!a.n)         msg = names[B] + " führt mit " + nf(b.best) + " Runden. Zeit für dein erstes Workout.";
-  else if(diff > 0)     msg = "🔥 Du führst mit " + nf(Math.abs(diff)) + " " + (Math.abs(diff) === 1 ? "Runde" : "Runden") + " Vorsprung.";
-  else if(diff < 0)     msg = "😤 " + names[B] + " führt mit " + nf(Math.abs(diff)) + " " + (Math.abs(diff) === 1 ? "Runde" : "Runden") + ". Aufholen!";
-  else                  msg = "🤝 Gleichstand bei " + nf(a.best) + " Runden. Das nächste Workout entscheidet.";
-  $("#vsLead").textContent = msg;
+function renderHeader(){
+  const s = currentSeason();
+  $('#headSub').textContent = 'Season ' + s.number + ' · ' + (s.mode === 'unlimited' ? 'unbegrenzt' : s.durationDays + ' Tage');
+  $('#seasonPill').textContent = 'Season ' + s.number;
+  $('#themeBtn').textContent = state.theme === 'dark' ? '🌙' : '☀️';
 }
 
-function renderDuelTable(A, B){
-  const sc = ui.duelScope;
-  const a = summary(A, sc), b = summary(B, sc);
-  const rows = [
-    ["Bestleistung", a.best, b.best, "runden"],
-    ["Ø Runden",     a.avg,  b.avg,  "runden"],
-    ["Ø letzte 3",   a.avg3, b.avg3, "runden"],
-    ["Workouts",     a.n,    b.n,    "zahl"],
-    ["Wiederholungen", a.reps, b.reps, "zahl"],
-    ["Wochen-Serie", weekStreak(A), weekStreak(B), "zahl"]
+function renderHero(){
+  const stats = computeStats(allWorkouts());
+  const pct = Math.round(clamp(stats.best / TOM * 100, 0, 999));
+  $('#heroPct').textContent = pct;
+  $('#heroMine').textContent = stats.best ? round1(stats.best) : 0;
+  $('#heroBar').style.width = clamp(stats.best/TOM*100, 0, 100) + '%';
+  $('#heroMsg').textContent = motivationMsg(stats.best);
+  const lvl = levelFor(stats.best);
+  $('#heroLevel').textContent = lvl.ic + ' ' + lvl.name;
+}
+
+function renderSeasonCard(){
+  const st = seasonStatus();
+  const list = seasonWorkouts(state.currentSeasonId);
+  const stats = computeStats(list);
+
+  $('#sDaysLeft').textContent = st.unlimited ? '∞' : st.daysLeft;
+  $('#sRange').textContent = fmtShort(st.season.startDate) + ' – ' + (st.season.endDate ? fmtShort(st.season.endDate) : 'offen');
+  $('#sWorkouts').textContent = list.length;
+  $('#sWorkoutGoal').textContent = 'Ziel: ' + st.goal;
+  const quote = st.expected > 0 ? Math.round(list.length / st.expected * 100) : 0;
+  $('#sQuote').textContent = quote + '%';
+  $('#sBest').textContent = stats.best ? round1(stats.best) : '–';
+  $('#sBestDate').textContent = stats.bestDate ? fmtDate(stats.bestDate) : 'noch kein Workout';
+  $('#sAvg').textContent = stats.count ? stats.avg : '–';
+
+  const f = forecast();
+  $('#sTrend').textContent = f.tr.ok ? (f.tr.slope >= 0 ? '+' : '') + round1(f.tr.slope) + ' Runden/Workout' : 'noch kein Trend';
+  $('#sForecast').textContent = stats.count ? round1(f.maxRounds) : '–';
+  $('#sStreak').textContent = stats.currentStreak;
+
+  // Nächstes geplantes Training: ca. alle 2 Tage
+  if(!stats.lastDate){ $('#sNext').textContent = 'heute'; }
+  else{
+    const next = addDays(stats.lastDate, 2);
+    const d = daysBetween(todayStr(), next);
+    $('#sNext').textContent = d <= 0 ? 'jetzt!' : (d === 1 ? 'morgen' : 'in ' + d + ' T');
+  }
+
+  $('#sProgTxt').textContent = st.unlimited ? 'unbegrenzt · Tag ' + st.elapsed : Math.round(st.progress) + ' %';
+  $('#sProgBar').style.width = (st.unlimited ? 100 : st.progress) + '%';
+}
+
+function renderGoals(){
+  const st = seasonStatus();
+  const list = seasonWorkouts(state.currentSeasonId);
+  const best = computeStats(allWorkouts()).best;
+  const items = [
+    { label:'Trainings in dieser Challenge', cur:list.length, target:st.goal, unit:'', cls:'mint' },
+    { label:'Ziel 1 · 12 Runden', cur:best, target:12, unit:' Runden', cls:'' },
+    { label:'Ziel 2 · 15 Runden', cur:best, target:15, unit:' Runden', cls:'' },
+    { label:'Ziel 3 · 20 Runden', cur:best, target:20, unit:' Runden', cls:'' },
+    { label:'Ziel 4 · 25 Runden', cur:best, target:25, unit:' Runden', cls:'' },
+    { label:'Endziel · 27 Runden (Tom Holland)', cur:best, target:27, unit:' Runden', cls:'gold' }
   ];
-  $("#duelBody").innerHTML = rows.map(([label, va, vb, kind]) => {
-    const fa = kind === "zahl" ? String(Math.round(va)) : (va ? nf(+va.toFixed(1)) : "–");
-    const fb = kind === "zahl" ? String(Math.round(vb)) : (vb ? nf(+vb.toFixed(1)) : "–");
-    const wa = va > vb ? " class=\"win\"" : "", wb = vb > va ? " class=\"win\"" : "";
-    return "<tr><td>"+label+"</td><td"+wa+">"+fa+"</td><td"+wb+">"+fb+"</td></tr>";
-  }).join("");
-}
-
-function renderHolland(A, B){
-  const a = summary(A,"all").best, b = summary(B,"all").best;
-  const pa = Math.min(100, a/HOLLAND*100), pb = Math.min(100, b/HOLLAND*100);
-  $("#thaBarA").style.width = pa + "%";
-  $("#thaBarB").style.width = pb + "%";
-  $("#thaPctA").textContent = Math.round(pa) + " %";
-  $("#thaPctB").textContent = Math.round(pb) + " %";
-}
-
-function entryHtml(w, isPr){
-  const mine = w.slot === me.slot;
-  return '<div class="entry ' + (mine ? "me" : "rival") + '">' +
-    '<div class="val" style="color:var(--' + (mine ? "accent" : "rival") + ')">' + nf(+w.rounds) + '</div>' +
-    '<div class="meta"><b>' + esc(names[w.slot]) + (isPr ? ' <span class="pr">🏅</span>' : '') + '</b>' +
-    '<small>' + weekdayShort(w.date) + ', ' + fmtDate(w.date) +
-    (w.notes ? ' · ' + esc(w.notes) : '') + '</small></div>' +
-    (mine ? '<button class="del" data-del="' + w.id + '" title="Löschen">✕</button>' : '') +
+  $('#goalList').innerHTML = items.map(g => {
+    const pct = clamp(g.cur/g.target*100, 0, 100);
+    const done = g.cur >= g.target;
+    return '<div style="margin-bottom:13px">' +
+      '<div class="row-between tiny" style="margin-bottom:5px">' +
+        '<span style="font-weight:700">' + (done ? '✅ ' : '') + g.label + '</span>' +
+        '<span class="muted mono">' + round1(g.cur) + ' / ' + g.target + g.unit + '</span>' +
+      '</div>' +
+      '<div class="bar ' + g.cls + '"><span style="width:' + pct + '%"></span></div>' +
     '</div>';
+  }).join('');
 }
 
-function renderRecent(){
-  const all = workouts.slice().sort((x,y) =>
-    y.date.localeCompare(x.date) || (y.ts||0) - (x.ts||0)).slice(0,6);
-  $("#recentList").innerHTML = all.length
-    ? all.map(w => entryHtml(w, isPr(w))).join("")
-    : '<div class="empty">Noch keine Workouts erfasst.</div>';
-  bindDelete("#recentList");
+function renderForecast(){
+  const f = forecast();
+  const list = seasonWorkouts(state.currentSeasonId);
+  $('#fWorkouts').textContent = list.length ? f.expectedTotal : '–';
+  $('#fWorkoutsHint').textContent = list.length
+    ? 'aktuell ' + list.length + ' · +' + f.expectedMore + ' erwartet' + (f.st.unlimited ? ' (30 Tage)' : '')
+    : 'noch keine Daten';
+  $('#fMax').textContent = list.length || allWorkouts().length ? round1(f.maxRounds) : '–';
+  $('#f27').textContent = f.date27 ? fmtDate(f.date27) : (computeStats(allWorkouts()).best >= TOM ? 'geschafft 🏆' : '–');
+  $('#f27Hint').textContent = f.hint27 || '–';
+  $('#fTrend').textContent = f.trendTxt;
+  $('#fTrendHint').textContent = f.trendHint;
 }
 
-function isPr(w){
-  const others = workouts.filter(x => x.slot === w.slot && x.id !== w.id);
-  return others.length > 0 && +w.rounds > Math.max(...others.map(x => +x.rounds));
+function renderLogList(){
+  const list = (ui.logScope === 'all' ? allWorkouts() : seasonWorkouts(state.currentSeasonId)).slice().reverse();
+  const q = ui.search.trim().toLowerCase();
+  const filtered = q ? list.filter(w => (w.notes||'').toLowerCase().includes(q)) : list;
+
+  if(!filtered.length){
+    $('#logList').innerHTML = '<p class="muted tiny">' + (q ? 'Keine Notiz enthält "' + esc(q) + '".' : 'Noch keine Workouts erfasst.') + '</p>';
+    return;
+  }
+  // PR-Daten bestimmen (chronologisch, damit "Rekord" korrekt markiert wird)
+  const chron = filtered.slice().reverse();
+  const prSet = new Set();
+  let run = 0;
+  (ui.logScope === 'all' ? allWorkouts() : seasonWorkouts(state.currentSeasonId)).forEach(w => {
+    if(w.rounds > run){ run = w.rounds; prSet.add(w.id); }
+  });
+
+  $('#logList').innerHTML = filtered.map(w => {
+    const isPr = prSet.has(w.id);
+    return '<div class="entry">' +
+      '<div class="rounds' + (isPr ? ' pr' : '') + '">' + round1(w.rounds) + '</div>' +
+      '<div class="meta">' +
+        '<div class="d">' + weekdayShort(w.date) + ', ' + fmtDate(w.date) + (isPr ? ' · 🥇 PR' : '') + '</div>' +
+        '<div class="r mono">' + nf(w.rounds*PER_ROUND.pull) + ' Pull · ' + nf(w.rounds*PER_ROUND.push) + ' Push · ' +
+          nf(w.rounds*PER_ROUND.squat) + ' Squats · ' + nf(w.rounds*REPS_PER_ROUND) + ' Reps</div>' +
+        (w.notes ? '<div class="note">„' + esc(w.notes) + '"</div>' : '') +
+      '</div>' +
+      '<button class="del" data-del="' + w.id + '" title="Löschen">🗑</button>' +
+    '</div>';
+  }).join('');
+
+  $$('#logList [data-del]').forEach(b => b.addEventListener('click', () => deleteWorkout(b.dataset.del)));
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function renderCalendar(){
+  const dows = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  $('#calDow').innerHTML = dows.map(d => '<div class="cal-dow">' + d + '</div>').join('');
+
+  const y = ui.calMonth.getFullYear(), m = ui.calMonth.getMonth();
+  $('#calTitle').textContent = ui.calMonth.toLocaleDateString('de-CH', { month:'long', year:'numeric' });
+
+  const first = new Date(y, m, 1);
+  const startOffset = (first.getDay() + 6) % 7;          // Montag = 0
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const t = todayStr();
+
+  // Workouts nach Datum + PR-Tage (über alle Zeiten)
+  const byDay = {};
+  allWorkouts().forEach(w => { byDay[w.date] = (byDay[w.date] || 0) + w.rounds; });
+  const prDays = new Set(computeStats(allWorkouts()).prDates);
+  const season = currentSeason();
+
+  let html = '';
+  for(let i=0;i<startOffset;i++){
+    const d = new Date(y, m, 1 - (startOffset - i));
+    html += '<div class="cal-day out">' + d.getDate() + '</div>';
+  }
+  let mCount = 0, mSum = 0, mBest = 0;
+  for(let day=1; day<=daysInMonth; day++){
+    const ds = y + '-' + pad(m+1) + '-' + pad(day);
+    const trained = byDay[ds] !== undefined;
+    const inSeason = ds >= season.startDate && (!season.endDate || ds <= season.endDate);
+    const cls = ['cal-day'];
+    if(inSeason) cls.push('season');
+    if(trained) cls.push(prDays.has(ds) ? 'pr' : 'trained');
+    if(ds === t) cls.push('today');
+    html += '<div class="' + cls.join(' ') + '">' + day + (trained ? '<b>' + round1(byDay[ds]) + '</b>' : '') + '</div>';
+    if(trained){ mCount++; mSum += byDay[ds]; mBest = Math.max(mBest, byDay[ds]); }
+  }
+  const rest = (7 - ((startOffset + daysInMonth) % 7)) % 7;
+  for(let i=1;i<=rest;i++) html += '<div class="cal-day out">' + i + '</div>';
+  $('#calGrid').innerHTML = html;
+
+  $('#mCount').textContent = mCount;
+  $('#mAvg').textContent = mCount ? round1(mSum/mCount) : '–';
+  $('#mBest').textContent = mBest ? round1(mBest) : '–';
 }
 
-function renderHistory(){
-  let list = workouts.slice();
-  if(ui.histWho === "me") list = list.filter(w => w.slot === me.slot);
-  list.sort((x,y) => y.date.localeCompare(x.date) || (y.ts||0) - (x.ts||0));
-  $("#histList").innerHTML = list.length
-    ? list.map(w => entryHtml(w, isPr(w))).join("")
-    : '<div class="empty">Keine Einträge.</div>';
-  bindDelete("#histList");
+function renderStats(){
+  const scoped = scopedWorkouts(ui.scope);
+  const s = computeStats(scoped);
+  const isAll = ui.scope === 'all';
+  const completedSeasons = state.seasons.filter(x => x.status === 'completed').length;
+
+  // Beste Season (nach Bestleistung)
+  let bestSeason = '–';
+  let bestVal = -1;
+  state.seasons.forEach(se => {
+    const st = computeStats(seasonWorkouts(se.id));
+    if(st.best > bestVal){ bestVal = st.best; bestSeason = 'S' + se.number + ' (' + round1(st.best) + ')'; }
+  });
+
+  const cells = [
+    ['Trainings', s.count, isAll ? 'seit ' + (s.firstDate ? fmtDate(s.firstDate) : '–') : 'in dieser Season', 'accent'],
+    ['Runden gesamt', round1(s.rounds), 'summiert', ''],
+    ['Pull-Ups', nf(s.pull), '× 5 pro Runde', 'mint'],
+    ['Push-Ups', nf(s.push), '× 10 pro Runde', 'mint'],
+    ['Air Squats', nf(s.squat), '× 15 pro Runde', 'mint'],
+    ['Wiederholungen', nf(s.reps), 'total', 'accent'],
+    ['Rekord', s.best ? round1(s.best) : '–', s.bestDate ? fmtDate(s.bestDate) : '–', 'gold'],
+    ['Ø Runden', s.count ? s.avg : '–', 'pro Training', ''],
+  ];
+  if(isAll){
+    cells.push(['Beste Season', bestSeason, 'nach Bestleistung', 'blue']);
+    cells.push(['Seasons', state.seasons.length, completedSeasons + ' abgeschlossen', 'blue']);
+  }
+  $('#statGrid').innerHTML = cells.map(c =>
+    '<div class="stat ' + c[3] + '"><div class="lbl">' + c[0] + '</div><div class="val" style="font-size:24px">' + c[1] + '</div><div class="hint">' + c[2] + '</div></div>'
+  ).join('');
+
+  $('#prScopeHint').textContent = isAll ? 'Alle Zeiten' : 'Aktuelle Season';
+  const prs = [
+    ['Höchste Rundenzahl', s.best ? round1(s.best) : '–', s.bestDate ? fmtDate(s.bestDate) : '–', 'gold'],
+    ['Grösste Steigerung', s.bestGain > 0 ? '+' + round1(s.bestGain) : '–', s.bestGainDate ? fmtDate(s.bestGainDate) : 'zwischen zwei Trainings', 'mint'],
+    ['Längste Serie', s.longestStreak || 0, 'Trainings ohne >3 Tage Pause', ''],
+    ['Trainings gesamt', s.count, 'erfasste Workouts', ''],
+    ['Ø aller Zeiten', s.count ? s.avg : '–', 'Runden pro Workout', ''],
+    ['Meiste Trainings/Woche', s.bestWeek || 0, s.bestWeekKey ? s.bestWeekKey.replace('-', ' ') : '–', 'blue']
+  ];
+  $('#prGrid').innerHTML = prs.map(c =>
+    '<div class="stat ' + c[3] + '"><div class="lbl">' + c[0] + '</div><div class="val" style="font-size:24px">' + c[1] + '</div><div class="hint">' + c[2] + '</div></div>'
+  ).join('');
 }
 
-function bindDelete(sel){
-  $$(sel + " [data-del]").forEach(b => b.addEventListener("click", () => {
-    const w = workouts.find(x => x.id === b.dataset.del);
-    if(!w) return;
-    confirmModal("Workout löschen?", nf(+w.rounds) + " Runden vom " + fmtDate(w.date) + " werden entfernt.",
-      async () => { await store.delWorkout(w.id); toast("Workout gelöscht"); });
-  }));
+function renderSeasonTable(){
+  const tb = $('#seasonTable tbody');
+  tb.innerHTML = state.seasons.slice().reverse().map(se => {
+    const st = computeStats(seasonWorkouts(se.id));
+    const active = se.id === state.currentSeasonId;
+    return '<tr>' +
+      '<td><b>S' + se.number + '</b>' + (active ? ' <span class="pill on" style="padding:2px 7px;font-size:10px">aktiv</span>' : '') + '</td>' +
+      '<td class="tiny muted">' + fmtShort(se.startDate) + '–' + (se.endDate ? fmtShort(se.endDate) : '∞') + '</td>' +
+      '<td class="num">' + st.count + '</td>' +
+      '<td class="num">' + (st.count ? st.avg : '–') + '</td>' +
+      '<td class="num">' + (st.best ? round1(st.best) : '–') + '</td>' +
+      '<td class="num">' + nf(st.reps) + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
-function renderMyForm(){
-  const s = summary(me.slot, "all");
-  $("#myBest").textContent  = s.n ? nf(s.best) : "–";
-  $("#myAvg3").textContent  = s.n ? nf(+s.avg3.toFixed(1)) : "–";
-  $("#myCount").textContent = s.n;
+function renderDataView(){
+  const st = seasonStatus();
+  $('#seasonInfo').textContent = 'Season ' + st.season.number + ' · Start ' + fmtDate(st.season.startDate) +
+    (st.unlimited ? ' · unbegrenzt' : ' · Ende ' + fmtDate(st.season.endDate) + ' · noch ' + st.daysLeft + ' Tage');
+  $('#setGoal').value = state.settings.goalWorkouts;
+  $('#setSound').value = state.settings.sound ? '1' : '0';
+  const backups = getBackups();
+  $('#backupInfo').textContent = backups.length
+    ? backups.length + ' Backup(s) · letztes: ' + new Date(backups[backups.length-1].ts).toLocaleString('de-CH')
+    : 'Noch kein Backup vorhanden.';
 }
 
 /* ---------- Charts ---------- */
-function destroy(k){ if(charts[k]){ charts[k].destroy(); charts[k] = null; } }
-function chartBase(){
-  const css = getComputedStyle(document.documentElement);
-  const grid = css.getPropertyValue("--line").trim();
-  const muted = css.getPropertyValue("--muted").trim();
-  return {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ labels:{ color:muted, font:{ weight:700, size:11 }, boxWidth:12, boxHeight:12 } } },
-    scales:{
-      x:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } } },
-      y:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } }, beginAtZero:true }
-    }
-  };
-}
+let charts = {};
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
 function renderCharts(){
-  if(typeof Chart === "undefined"){
-    $$(".chart-box").forEach(b => b.innerHTML =
-      '<div class="empty">Grafiken brauchen eine Internetverbindung.</div>');
+  const boxes = ['ch1','ch2','ch3','ch4','ch5'];
+  if(typeof Chart === 'undefined'){
+    boxes.forEach(id => {
+      const c = $('#'+id);
+      if(c && c.parentElement){
+        c.parentElement.innerHTML = '<p class="muted tiny" style="text-align:center;padding-top:80px">' +
+          'Chart.js konnte nicht geladen werden (offline). Einmal mit Internet öffnen – danach liegt die Bibliothek im Browser-Cache.</p>';
+      }
+    });
     return;
   }
-  const css = getComputedStyle(document.documentElement);
-  const cA = css.getPropertyValue("--accent").trim(), cB = css.getPropertyValue("--rival").trim();
-  const other = me.slot === "a" ? "b" : "a";
-  const base = chartBase();
 
-  // 1. Runden pro Training – gemeinsame Datums-Achse
-  const dates = [...new Set(workouts.map(w => w.date))].sort();
-  const series = slot => dates.map(d => {
-    const hit = workouts.filter(w => w.slot === slot && w.date === d);
-    return hit.length ? Math.max(...hit.map(w => +w.rounds)) : null;
-  });
-  destroy("ch1");
-  charts.ch1 = new Chart($("#ch1"), {
-    type:"line",
-    data:{ labels:dates.map(d => fmtDate(d).slice(0,6)), datasets:[
-      { label:names[me.slot], data:series(me.slot), borderColor:cA, backgroundColor:cA+"33",
-        tension:.32, spanGaps:true, pointRadius:4, borderWidth:3, fill:true },
-      { label:names[other], data:series(other), borderColor:cB, backgroundColor:cB+"22",
-        tension:.32, spanGaps:true, pointRadius:4, borderWidth:3, fill:true }
+  const list = scopedWorkouts(ui.scope);
+  const text = cssVar('--text'), muted = cssVar('--muted'), line = cssVar('--line');
+  const accent = cssVar('--accent'), mint = cssVar('--mint'), gold = cssVar('--gold'), blue = cssVar('--blue');
+
+  Chart.defaults.color = muted;
+  Chart.defaults.font.family = '-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif';
+  Chart.defaults.font.weight = '600';
+
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false }, tooltip:{
+      backgroundColor:cssVar('--surface-2'), titleColor:text, bodyColor:text,
+      borderColor:line, borderWidth:1, padding:10, cornerRadius:10, displayColors:false } },
+    scales:{
+      x:{ grid:{ color:line, drawTicks:false }, ticks:{ maxRotation:0, autoSkipPadding:14 }, border:{ color:line } },
+      y:{ grid:{ color:line }, ticks:{ precision:0 }, border:{ display:false }, beginAtZero:true }
+    },
+    animation:{ duration:600 }
+  };
+  const destroy = id => { if(charts[id]){ charts[id].destroy(); delete charts[id]; } };
+
+  $('#chartHint').textContent = list.length
+    ? 'Runden pro Training · ' + list.length + ' Workouts · Trendlinie gestrichelt'
+    : 'Noch keine Daten – erfasse dein erstes Workout.';
+
+  // 1) Runden pro Training + Trendlinie
+  destroy('ch1');
+  const labels1 = list.map(w => fmtShort(w.date));
+  const tr = trend(list);
+  const trendData = list.map((_, i) => Math.max(0, round1(tr.intercept + tr.slope*i)));
+  charts.ch1 = new Chart($('#ch1'), {
+    type:'bar',
+    data:{ labels:labels1, datasets:[
+      { label:'Runden', data:list.map(w => w.rounds), backgroundColor:accent + 'cc', borderRadius:7, maxBarThickness:34, order:2 },
+      { label:'Trend', type:'line', data:trendData, borderColor:mint, borderDash:[6,5], borderWidth:2,
+        pointRadius:0, tension:.25, order:1 },
+      { label:'Tom Holland', type:'line', data:list.map(()=>TOM), borderColor:gold, borderWidth:1.5,
+        borderDash:[3,4], pointRadius:0, order:0 }
     ]},
-    options:base
+    options:baseOpts
   });
 
-  // 2. Ø Runden pro Woche
-  const weeks = [...new Set(workouts.map(w => isoWeekKey(w.date)))].sort();
-  const weekAvg = slot => weeks.map(k => {
-    const l = workouts.filter(w => w.slot === slot && isoWeekKey(w.date) === k).map(w => +w.rounds);
-    return l.length ? +(l.reduce((a,b) => a+b,0)/l.length).toFixed(1) : null;
-  });
-  destroy("ch2");
-  charts.ch2 = new Chart($("#ch2"), {
-    type:"bar",
-    data:{ labels:weeks.map(k => k.split("-")[1]), datasets:[
-      { label:names[me.slot], data:weekAvg(me.slot), backgroundColor:cA+"CC", borderRadius:7 },
-      { label:names[other],   data:weekAvg(other),   backgroundColor:cB+"CC", borderRadius:7 }
+  // 2) Ø Runden pro Woche
+  const weeks = {};
+  list.forEach(w => { const k = isoWeekKey(w.date); (weeks[k] = weeks[k] || []).push(w.rounds); });
+  const wk = Object.keys(weeks).sort();
+  destroy('ch2');
+  charts.ch2 = new Chart($('#ch2'), {
+    type:'bar',
+    data:{ labels:wk.map(k => k.split('-')[1]), datasets:[
+      { data:wk.map(k => round1(weeks[k].reduce((a,b)=>a+b,0)/weeks[k].length)),
+        backgroundColor:mint + 'bb', borderRadius:7, maxBarThickness:40 }
     ]},
-    options:base
+    options:baseOpts
   });
 
-  // 3. Trainings gesamt (kumuliert)
-  const cum = slot => { let n = 0; return dates.map(d =>
-    n += workouts.filter(w => w.slot === slot && w.date === d).length); };
-  destroy("ch3");
-  charts.ch3 = new Chart($("#ch3"), {
-    type:"line",
-    data:{ labels:dates.map(d => fmtDate(d).slice(0,6)), datasets:[
-      { label:names[me.slot], data:cum(me.slot), borderColor:cA, tension:.25, pointRadius:0, borderWidth:3 },
-      { label:names[other],   data:cum(other),   borderColor:cB, tension:.25, pointRadius:0, borderWidth:3 }
+  // 3) PR im Zeitverlauf (Treppe)
+  let run = 0;
+  const prSeries = list.map(w => { run = Math.max(run, w.rounds); return run; });
+  destroy('ch3');
+  charts.ch3 = new Chart($('#ch3'), {
+    type:'line',
+    data:{ labels:labels1, datasets:[
+      { data:prSeries, borderColor:gold, backgroundColor:gold + '22', fill:true,
+        stepped:true, borderWidth:2.5, pointRadius:2, pointBackgroundColor:gold },
+      { label:'Tom', data:list.map(()=>TOM), borderColor:muted, borderDash:[3,4], borderWidth:1.5, pointRadius:0, fill:false }
     ]},
-    options:base
+    options:baseOpts
+  });
+
+  // 4) Kumulierte Wiederholungen
+  let cum = 0;
+  const cumData = list.map(w => (cum += w.rounds * REPS_PER_ROUND));
+  destroy('ch4');
+  charts.ch4 = new Chart($('#ch4'), {
+    type:'line',
+    data:{ labels:labels1, datasets:[
+      { data:cumData, borderColor:blue, backgroundColor:blue + '25', fill:true, borderWidth:2.5, tension:.3, pointRadius:0 }
+    ]},
+    options:baseOpts
+  });
+
+  // 5) Trainings pro Woche
+  const freq = {};
+  list.forEach(w => { const k = isoWeekKey(w.date); freq[k] = (freq[k]||0)+1; });
+  const fk = Object.keys(freq).sort();
+  destroy('ch5');
+  charts.ch5 = new Chart($('#ch5'), {
+    type:'bar',
+    data:{ labels:fk.map(k => k.split('-')[1]), datasets:[
+      { data:fk.map(k => freq[k]), backgroundColor:accent + '99', borderRadius:7, maxBarThickness:40 }
+    ]},
+    options:Object.assign({}, baseOpts, {
+      scales:Object.assign({}, baseOpts.scales, { y:Object.assign({}, baseOpts.scales.y, { suggestedMax:5 }) })
+    })
   });
 }
+
 
 /* ============================================================
-   AKTIONEN
+   4b. DUELL
+   ------------------------------------------------------------
+   Der lokale Tracker bleibt die Wahrheit: `state.workouts` wird durch das
+   Duell nie verändert. Nach jeder Änderung wird der eigene Stand als EIN
+   Dokument nach Firestore gespiegelt (duels/{code}/athletes/{slot}); der
+   Gegner kommt umgekehrt per Live-Abo herein. Fällt Firebase aus, läuft
+   der Tracker unverändert weiter.
    ============================================================ */
-async function addWorkout(date, rounds, notes){
-  const w = { id:uid(), slot:me.slot, date, rounds:+rounds, notes:notes||"", ts:Date.now() };
-  const prevBest = summary(me.slot,"all").best;
-  await store.addWorkout(w);
-  if(+rounds > prevBest && prevBest > 0) toast("🏅 Neue Bestleistung: " + nf(+rounds) + " Runden!", true);
-  else toast("Workout gespeichert");
+let rival = null;          // { name, workouts:[{date,rounds,notes}], updated }
+let duelConn = { on:false, fb:null, unsub:null, busy:false };
+let duelPick = 'a';
 
-  const other = me.slot === "a" ? "b" : "a";
-  const ob = summary(other,"all").best;
-  if(ob > 0 && +rounds > ob && prevBest <= ob) toast("⚔️ Du hast " + names[other] + " überholt!", true);
-}
+const HOLLAND = 27;
+const otherSlot = () => (state.duel && state.duel.slot === 'a') ? 'b' : 'a';
 
-function updateCalc(){
-  const r = parseFloat($("#inRounds").value) || 0;
-  $("#cPull").textContent  = nf(r*PER_ROUND.pull);
-  $("#cPush").textContent  = nf(r*PER_ROUND.push);
-  $("#cSquat").textContent = nf(r*PER_ROUND.squat);
+function newCode(){
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // ohne I/O/0/1 – am Telefon vorlesbar
+  let c = 'TH'; for(let i=0;i<4;i++) c += A[(Math.random()*A.length)|0];
+  return c;
 }
+/** Kompakte Form der eigenen Workouts für die Übertragung.
+    Die ID wird mitgeschickt, damit zwei Geräte desselben Athleten
+    zusammengeführt statt überschrieben werden. */
+function myPayload(){
+  return allWorkouts().map(w => ({
+    i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId
+  }));
+}
+/** Wandelt eine Payload zurück in die Struktur des Trackers */
+function fromPayload(list){
+  return (Array.isArray(list) ? list : []).map(w => ({
+    id: w.i || ('w_' + (w.c || Date.now()) + '_rem'),
+    date: w.d, rounds: +w.r || 0, notes: w.n || '', created: w.c || 0, seasonId: w.s
+  })).filter(w => typeof w.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.date));
+}
+const rivalList = () => rival ? fromPayload(rival.workouts).sort(byDate) : [];
 
-/** Import des JSON-Exports aus dem lokalen Tracker */
-async function importJson(text){
-  let data;
-  try{ data = JSON.parse(text); }
-  catch(e){ toast("Datei ist kein gültiges JSON"); return; }
-  const raw = Array.isArray(data) ? data
-            : Array.isArray(data.workouts) ? data.workouts
-            : Array.isArray(data.seasons) ? data.seasons.flatMap(s => s.workouts || []) : null;
-  if(!raw){ toast("Keine Workouts in der Datei gefunden"); return; }
+async function duelConnect(){
+  if(!CLOUD_READY || !state.duel) return false;
+  const [{ initializeApp }, auth, fs] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+  ]);
+  const app = initializeApp(FIREBASE_CONFIG);
+  const a = auth.getAuth(app);
+  await auth.signInAnonymously(a);            // unsichtbar; nur damit die Regeln greifen
+  const db = fs.getFirestore(app);
+  duelConn.fb = { fs, db };
 
-  const have = new Set(workouts.filter(w => w.slot === me.slot).map(w => w.date + "|" + w.rounds));
-  const fresh = raw
-    .filter(w => w && w.date && w.rounds != null)
-    .filter(w => !have.has(w.date + "|" + (+w.rounds)))
-    .map(w => ({ id:uid(), slot:me.slot, date:String(w.date).slice(0,10),
-                 rounds:+w.rounds, notes:(w.notes||"").slice(0,300), ts:Date.parse(w.date)||Date.now() }));
-
-  if(!fresh.length){ toast("Alle Workouts waren schon vorhanden"); return; }
-  for(const w of fresh) await store.addWorkout(w);
-  toast(fresh.length + " Workouts importiert", true);
-}
-
-function exportJson(){
-  const blob = new Blob([JSON.stringify({
-    code:me.code, names, exported:new Date().toISOString(), workouts
-  }, null, 2)], { type:"application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "th-duell_" + todayStr() + ".json";
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-
-/* ---------- UI-Helfer ---------- */
-function switchView(v){
-  ui.view = v;
-  $$(".view").forEach(s => s.classList.toggle("active", s.id === "view-" + v));
-  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.view === v));
-  window.scrollTo({ top:0, behavior:"smooth" });
-  if(v === "charts") renderCharts();
-}
-function applyTheme(){
-  document.documentElement.dataset.theme = ui.theme;
-  $("#themeBtn").textContent = ui.theme === "dark" ? "🌙" : "☀️";
-  document.querySelector('meta[name=theme-color]').content = ui.theme === "dark" ? "#0B0D10" : "#F5F7FA";
-  if(ui.view === "charts") renderCharts();
-}
-function toast(msg, gold){
-  const el = document.createElement("div");
-  el.className = "toast" + (gold ? " gold" : "");
-  el.textContent = msg;
-  $("#toasts").appendChild(el);
-  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 2600);
-  setTimeout(() => el.remove(), 3000);
-}
-function openModal(html, after){
-  $("#modal").innerHTML = html;
-  $("#modalBg").classList.add("open");
-  if(after) after();
-}
-function closeModal(){ $("#modalBg").classList.remove("open"); }
-function confirmModal(title, text, onYes){
-  openModal('<h3>' + esc(title) + '</h3><p class="muted tiny" style="margin:0 0 16px">' + esc(text) + '</p>' +
-    '<button class="btn danger" id="cYes">Ja, löschen</button>' +
-    '<button class="btn ghost" style="margin-top:8px" id="cNo">Abbrechen</button>',
-    () => {
-      $("#cYes").addEventListener("click", async () => { closeModal(); await onYes(); });
-      $("#cNo").addEventListener("click", closeModal);
-    });
+  if(duelConn.unsub) duelConn.unsub();
+  // Beide Athleten-Dokumente abonnieren: das fremde für den Vergleich,
+  // das eigene für den Abgleich zwischen Handy und Laptop.
+  duelConn.unsub = fs.onSnapshot(
+    fs.collection(db, 'duels', state.duel.code, 'athletes'),
+    snap => {
+      snap.docs.forEach(d => {
+        if(d.id === otherSlot()){
+          const prevBest = rival ? computeStats(rivalList()).best : 0;
+          rival = d.data();
+          const nb = computeStats(rivalList()).best;
+          if(prevBest && nb > prevBest){
+            toast('⚔️ ' + rivalName() + ' hat vorgelegt: ' + round1(nb) + ' Runden!', true);
+          }
+        }else if(d.id === state.duel.slot){
+          mergeOwn(d.data());
+        }
+      });
+      renderDuel();
+    },
+    err => { console.error(err); duelConn.on = false; renderDuel(); }
+  );
+  duelConn.on = true;
+  await duelPush();
+  renderDuel();
+  return true;
 }
 
-/* ============================================================
-   VERBINDEN & START
-   ============================================================ */
-function setConnUi(){
-  const cloud = store && store.kind === "cloud";
-  $("#headSub").textContent = me.code
-    ? (cloud ? "Code " + me.code + " · live" : "Code " + me.code + " · offline")
-    : "Nicht verbunden";
-  const p = $("#connPill");
-  p.textContent = cloud ? "Firebase verbunden" : "Offline-Modus";
-  p.className = "pill " + (cloud ? "on" : "warn");
-  $("#connInfo").textContent = cloud
-    ? "Eure Workouts werden live über Firestore geteilt. Neue Einträge des anderen erscheinen ohne Neuladen."
-    : "Noch keine Firebase-Konfiguration hinterlegt – die Daten bleiben nur in diesem Browser. Trag die Config im Kopf der index.html ein, damit das Duell funktioniert.";
-  $("#setCode").value = me.code;
-  $("#liveP").textContent = cloud ? "live" : "lokal";
-  $("#liveP").className = "pill " + (cloud ? "on" : "warn");
+/** Eigener Stand aus der Cloud (= anderes Gerät) in die lokalen Daten übernehmen.
+    Vereinigung über die Workout-ID; gelöschte IDs (Tombstones) bleiben draussen. */
+function mergeOwn(doc){
+  if(!doc || duelConn.busy) return;
+  const remoteRemoved = Array.isArray(doc.removed) ? doc.removed : [];
+  // Löschungen des anderen Geräts nachvollziehen
+  const newTomb = remoteRemoved.filter(id => !state.duelRemoved.includes(id));
+  if(newTomb.length) state.duelRemoved = state.duelRemoved.concat(newTomb);
+
+  const known = new Set(state.workouts.map(w => w.id));
+  const dead  = new Set(state.duelRemoved);
+  const seasonIds = new Set(state.seasons.map(x => x.id));
+
+  const incoming = fromPayload(doc.workouts)
+    .filter(w => !known.has(w.id) && !dead.has(w.id))
+    .map(w => Object.assign({}, w, {
+      seasonId: seasonIds.has(w.seasonId) ? w.seasonId : state.currentSeasonId
+    }));
+  const removedLocally = state.workouts.filter(w => dead.has(w.id));
+
+  if(!incoming.length && !removedLocally.length && !newTomb.length) return;
+
+  state.workouts = state.workouts.filter(w => !dead.has(w.id)).concat(incoming);
+  save();
+  renderAll();
+  checkBadges();
+  if(incoming.length){
+    toast('🔄 ' + incoming.length + ' Workout' + (incoming.length === 1 ? '' : 's') + ' von deinem anderen Gerät übernommen');
+    duelPush();   // eigener Stand kann jetzt mehr enthalten als die Cloud
+  }
 }
 
-async function connect(){
-  store = CLOUD_READY ? CloudStore : LocalStore;
-  onData = () => { renderAll(); setConnUi(); };
+/** Eigenen Stand hochladen – nach jedem Speichern/Löschen/Import */
+async function duelPush(){
+  if(!duelConn.on || !duelConn.fb || !state.duel) return;
+  const { fs, db } = duelConn.fb;
   try{
-    await store.init();
+    duelConn.busy = true;
+    await fs.setDoc(fs.doc(db, 'duels', state.duel.code, 'athletes', state.duel.slot), {
+      name: state.duel.name || 'Athlet',
+      workouts: myPayload(),
+      removed: state.duelRemoved.slice(-200),
+      updated: Date.now()
+    });
   }catch(e){
     console.error(e);
-    store = LocalStore;
-    await store.init();
-    toast("Firebase nicht erreichbar – Offline-Modus");
+    toast('Duell-Daten konnten nicht gesendet werden');
+  }finally{
+    duelConn.busy = false;
   }
-  setConnUi();
-  renderAll();
+}
+/** Von jeder Stelle aufrufbar, die state.workouts verändert */
+function duelSync(){ duelPush(); renderDuel(); }
+
+const rivalName = () => (rival && rival.name) ? rival.name : 'Gegner';
+
+function within30(list){
+  const limit = addDays(todayStr(), -29);
+  return list.filter(w => w.date >= limit);
 }
 
-function showGate(show){ $("#gate").style.display = show ? "grid" : "none"; }
+function renderDuel(){
+  const setup = $('#duelSetup'), live = $('#duelLive');
+  if(!state.duel){
+    setup.style.display = ''; live.style.display = 'none';
+    $('#dHint').textContent = CLOUD_READY
+      ? 'Deine ' + state.workouts.length + ' bisherigen Workouts werden automatisch mitgenommen.'
+      : '⚠️ Noch keine Firebase-Konfiguration hinterlegt – bis dahin lässt sich kein Duell starten (siehe README).';
+    $('#dJoin').disabled = !CLOUD_READY;
+    return;
+  }
+  setup.style.display = 'none'; live.style.display = '';
 
-function initGate(){
-  let slot = me.slot || "a";
-  const paint = () => {
-    $("#pickA").classList.toggle("sel", slot === "a");
-    $("#pickB").classList.toggle("sel", slot === "b");
-  };
-  $$(".pick button").forEach(b => b.addEventListener("click", () => { slot = b.dataset.slot; paint(); }));
-  paint();
+  const myName = state.duel.name || 'Du', rName = rivalName();
+  const mine = allWorkouts(), theirs = rivalList();
+  const a = computeStats(mine), b = computeStats(theirs);
 
-  // Code aus dem Link übernehmen: ...index.html#TH7K2M
-  const fromHash = location.hash.replace("#","").trim().toUpperCase();
-  if(fromHash) $("#gateCode").value = fromHash;
+  $('#vsNameA').textContent = myName;  $('#vsNameB').textContent = rName;
+  $('#thA').textContent = myName;      $('#thB').textContent = rName;
+  $('#thaName').textContent = myName;  $('#thbName').textContent = rName;
+  $('#vsScoreA').textContent = a.count ? round1(a.best) : '–';
+  $('#vsScoreB').textContent = b.count ? round1(b.best) : '–';
+  $('#vsLegA').textContent = a.count ? a.count + ' Workouts' : 'noch keins';
+  $('#vsLegB').textContent = b.count ? b.count + ' Workouts' : 'noch keins';
 
-  $("#gateNew").addEventListener("click", () => {
-    $("#gateCode").value = newCode();
-    $("#gateHint").textContent = "Neuer Code erzeugt – schick ihn deinem Gegner, damit er beitreten kann.";
+  const sum = a.best + b.best, pa = sum > 0 ? a.best/sum*100 : 50;
+  $('#vsBarA').style.width = pa + '%';
+  $('#vsBarB').style.width = (100-pa) + '%';
+
+  const diff = round1(a.best - b.best), ab = Math.abs(diff), unit = ab === 1 ? 'Runde' : 'Runden';
+  let msg;
+  if(!rival)          msg = rName + ' ist noch nicht beigetreten. Schick den Code weiter.';
+  else if(!a.count && !b.count) msg = 'Noch keine Workouts – tragt euer erstes Training ein.';
+  else if(!b.count)   msg = rName + ' hat noch nicht vorgelegt. Dein Vorsprung: ' + round1(a.best) + ' Runden.';
+  else if(!a.count)   msg = rName + ' führt mit ' + round1(b.best) + ' Runden. Zeit für dein erstes Workout.';
+  else if(diff > 0)   msg = '🔥 Du führst mit ' + round1(ab) + ' ' + unit + ' Vorsprung.';
+  else if(diff < 0)   msg = '😤 ' + rName + ' führt mit ' + round1(ab) + ' ' + unit + '. Aufholen!';
+  else                msg = '🤝 Gleichstand bei ' + round1(a.best) + ' Runden. Das nächste Workout entscheidet.';
+  $('#vsLead').textContent = msg;
+
+  // Direktvergleich
+  const sc = ui.duelScope || 'all';
+  const ma = sc === '30' ? within30(mine) : mine, mb = sc === '30' ? within30(theirs) : theirs;
+  const sa = computeStats(ma), sb = computeStats(mb);
+  const last3 = l => { const r = l.slice(-3).map(w => w.rounds); return r.length ? round1(r.reduce((x,y)=>x+y,0)/r.length) : 0; };
+  const rows = [
+    ['Bestleistung',    sa.best, sb.best, 1],
+    ['Ø Runden',        sa.avg,  sb.avg,  1],
+    ['Ø letzte 3',      last3(ma), last3(mb), 1],
+    ['Workouts',        sa.count, sb.count, 0],
+    ['Wiederholungen',  sa.reps, sb.reps, 0],
+    ['Längste Serie',   sa.longestStreak, sb.longestStreak, 0],
+    ['Beste Woche',     sa.bestWeek, sb.bestWeek, 0]
+  ];
+  $('#duelBody').innerHTML = rows.map(([label, va, vb, dec]) => {
+    const f = v => dec ? (v ? round1(v).toString().replace('.', ',') : '–') : String(Math.round(v));
+    return '<tr><td>' + label + '</td>' +
+      '<td' + (va > vb ? ' class="win"' : '') + '>' + f(va) + '</td>' +
+      '<td' + (vb > va ? ' class="win"' : '') + '>' + f(vb) + '</td></tr>';
+  }).join('');
+
+  // Weg zu Tom Holland
+  const pctA = Math.min(100, a.best/HOLLAND*100), pctB = Math.min(100, b.best/HOLLAND*100);
+  $('#thaBarA').style.width = pctA + '%';  $('#thaPctA').textContent = Math.round(pctA) + ' %';
+  $('#thaBarB').style.width = pctB + '%';  $('#thaPctB').textContent = Math.round(pctB) + ' %';
+
+  // Letzte Workouts beider
+  const tagged = mine.map(w => ({ w, mine:true })).concat(theirs.map(w => ({ w, mine:false })));
+  tagged.sort((x,y) => x.w.date === y.w.date ? 0 : (x.w.date < y.w.date ? 1 : -1));
+  $('#duelRecent').innerHTML = tagged.length
+    ? tagged.slice(0,8).map(({w, mine:isMine}) =>
+        '<div class="duel-entry ' + (isMine ? 'me' : 'rival') + '">' +
+        '<div class="v" style="color:var(--' + (isMine ? 'accent' : 'blue') + ')">' + round1(w.rounds) + '</div>' +
+        '<div class="m"><b>' + esc(isMine ? myName : rName) + '</b><small>' +
+        weekdayShort(w.date) + ', ' + fmtDate(w.date) + (w.notes ? ' · ' + esc(w.notes) : '') +
+        '</small></div></div>').join('')
+    : '<p class="tiny muted" style="text-align:center;padding:16px">Noch keine Workouts.</p>';
+
+  // Verbindung
+  $('#duelCodeBox').textContent = state.duel.code;
+  const p = $('#duelPill');
+  p.textContent = duelConn.on ? 'live' : 'offline';
+  p.className = 'pill' + (duelConn.on ? ' on' : '');
+  $('#duelConnInfo').textContent = duelConn.on
+    ? 'Verbunden als ' + myName + ' (Athlet ' + state.duel.slot.toUpperCase() + '). Neue Workouts erscheinen bei euch beiden sofort.'
+    : 'Keine Verbindung zu Firebase – dein Tracker läuft normal weiter, der Vergleich ist aber nicht aktuell.';
+
+  renderDuelChart(mine, theirs, myName, rName);
+}
+
+function renderDuelChart(mine, theirs, myName, rName){
+  if(typeof Chart === 'undefined' || !$('#chDuel')) return;
+  const css = getComputedStyle(document.documentElement);
+  const cA = css.getPropertyValue('--accent').trim(), cB = css.getPropertyValue('--blue').trim();
+  const grid = css.getPropertyValue('--line').trim(), muted = css.getPropertyValue('--muted').trim();
+  const dates = [...new Set(mine.concat(theirs).map(w => w.date))].sort();
+  const serie = list => dates.map(d => {
+    const hit = list.filter(w => w.date === d);
+    return hit.length ? Math.max(...hit.map(w => w.rounds)) : null;
   });
-
-  $("#gateJoin").addEventListener("click", async () => {
-    const code = $("#gateCode").value.trim().toUpperCase();
-    const name = $("#gateName").value.trim();
-    if(code.length < 4){ $("#gateHint").textContent = "Bitte einen Code mit mindestens 4 Zeichen eingeben."; return; }
-    if(!name){ $("#gateHint").textContent = "Bitte deinen Namen eingeben."; return; }
-    me = { code, slot, name };
-    saveLocal();
-    $("#gateJoin").disabled = true;
-    $("#gateHint").textContent = "Verbinde …";
-    showGate(false);
-    await connect();
-    await store.setName(slot, name);
-    $("#gateJoin").disabled = false;
+  if(charts.chDuel){ charts.chDuel.destroy(); delete charts.chDuel; }
+  charts.chDuel = new Chart($('#chDuel'), {
+    type:'line',
+    data:{ labels:dates.map(fmtShort), datasets:[
+      { label:myName, data:serie(mine),   borderColor:cA, backgroundColor:cA+'33', tension:.32,
+        spanGaps:true, pointRadius:4, borderWidth:3, fill:true },
+      { label:rName,  data:serie(theirs), borderColor:cB, backgroundColor:cB+'22', tension:.32,
+        spanGaps:true, pointRadius:4, borderWidth:3, fill:true }
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:muted, font:{ weight:700, size:11 }, boxWidth:12, boxHeight:12 } } },
+      scales:{ x:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } } },
+               y:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } }, beginAtZero:true } }
+    }
   });
 }
 
-function bindUi(){
-  $$(".tab").forEach(b => b.addEventListener("click", () => switchView(b.dataset.view)));
-  $("#themeBtn").addEventListener("click", () => {
-    ui.theme = ui.theme === "dark" ? "light" : "dark"; applyTheme(); saveLocal();
-  });
+async function duelJoin(){
+  const code = $('#dCode').value.trim().toUpperCase();
+  const name = $('#dName').value.trim();
+  if(code.length < 4){ $('#dHint').textContent = 'Bitte einen Code mit mindestens 4 Zeichen eingeben.'; return; }
+  if(!name){ $('#dHint').textContent = 'Bitte deinen Namen eingeben.'; return; }
+  $('#dJoin').disabled = true;
+  $('#dHint').textContent = 'Verbinde …';
+  state.duel = { code, slot:duelPick, name };
+  save();
+  try{
+    await duelConnect();
+    toast('⚔️ Duell aktiv · Code ' + code, true);
+  }catch(e){
+    console.error(e);
+    state.duel = null; save();
+    $('#dHint').textContent = 'Verbindung fehlgeschlagen. Stimmt die Firebase-Konfiguration?';
+    toast('Firebase nicht erreichbar');
+  }
+  $('#dJoin').disabled = false;
+  renderDuel();
+}
 
-  $("#inRounds").addEventListener("input", updateCalc);
-  $("#saveWorkout").addEventListener("click", async () => {
-    const d = $("#inDate").value || todayStr();
-    const r = parseFloat($("#inRounds").value);
-    if(isNaN(r) || r < 0 || r > 80){ toast("Bitte eine Rundenzahl zwischen 0 und 80 eingeben"); return; }
-    await addWorkout(d, r, $("#inNotes").value.trim());
-    $("#inRounds").value = ""; $("#inNotes").value = ""; updateCalc();
-    switchView("duel");
-  });
+function duelLeave(){
+  openModal(
+    '<h3>Duell verlassen?</h3><p class="muted tiny" style="margin:0 0 16px">Deine Workouts bleiben im Tracker. ' +
+    'Der hochgeladene Stand bleibt beim Gegner sichtbar, bis er das Duell ebenfalls verlässt.</p>' +
+    '<button class="btn danger" id="okLv">Verlassen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="noLv">Abbrechen</button>',
+    () => {
+      $('#okLv').addEventListener('click', () => {
+        if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
+        duelConn.on = false; rival = null; state.duel = null; save();
+        closeModal(); renderDuel(); toast('Duell verlassen');
+      });
+      $('#noLv').addEventListener('click', closeModal);
+    }
+  );
+}
 
-  $$("#duelScope button").forEach(b => b.addEventListener("click", () => {
+async function duelShare(){
+  const url = location.origin + location.pathname + '#' + state.duel.code;
+  const text = 'Tom Holland Challenge – tritt meinem Duell bei. Code: ' + state.duel.code + '\n' + url;
+  if(navigator.share){ try{ await navigator.share({ title:'Tom Holland Duell', text, url }); return; }catch(e){} }
+  try{ await navigator.clipboard.writeText(text); toast('Einladung kopiert'); }
+  catch(e){ openModal('<h3>Einladung</h3><div class="code-box">' + esc(state.duel.code) + '</div>' +
+    '<p class="tiny muted" style="margin:0 0 14px;word-break:break-all">' + esc(url) + '</p>' +
+    '<button class="btn ghost" id="clS">Schliessen</button>',
+    () => $('#clS').addEventListener('click', closeModal)); }
+}
+
+function bindDuel(){
+  $$('#duelSetup .pick button').forEach(b => b.addEventListener('click', () => {
+    duelPick = b.dataset.slot;
+    $$('#duelSetup .pick button').forEach(x => x.classList.toggle('sel', x === b));
+  }));
+  $$('#duelSetup .pick button')[0].classList.add('sel');
+  $('#dNew').addEventListener('click', () => {
+    $('#dCode').value = newCode();
+    $('#dHint').textContent = 'Neuer Code erzeugt – schick ihn deinem Gegner, damit er beitreten kann.';
+  });
+  $('#dJoin').addEventListener('click', duelJoin);
+  $('#dShare').addEventListener('click', duelShare);
+  $('#dLeave').addEventListener('click', duelLeave);
+  $$('#duelScope button').forEach(b => b.addEventListener('click', () => {
     ui.duelScope = b.dataset.scope;
-    $$("#duelScope button").forEach(x => x.classList.toggle("active", x === b));
-    renderDuelTable(me.slot, me.slot === "a" ? "b" : "a");
+    $$('#duelScope button').forEach(x => x.classList.toggle('active', x === b));
+    renderDuel();
   }));
-  $$("#histFilter button").forEach(b => b.addEventListener("click", () => {
-    ui.histWho = b.dataset.who;
-    $$("#histFilter button").forEach(x => x.classList.toggle("active", x === b));
-    renderHistory();
-  }));
-
-  $("#btnCopyCode").addEventListener("click", async () => {
-    try{ await navigator.clipboard.writeText(me.code); toast("Code kopiert"); }
-    catch(e){ toast("Code: " + me.code); }
-  });
-  $("#btnShare").addEventListener("click", async () => {
-    const url = location.origin + location.pathname + "#" + me.code;
-    const text = "Tom Holland Challenge – tritt meinem Duell bei. Code: " + me.code + "\n" + url;
-    if(navigator.share){ try{ await navigator.share({ title:"Tom Holland Duell", text, url }); return; }catch(e){} }
-    try{ await navigator.clipboard.writeText(text); toast("Einladung kopiert"); }
-    catch(e){ openModal('<h3>Einladung</h3><div class="code-box">' + esc(me.code) + '</div>' +
-      '<p class="tiny muted" style="margin:12px 0 14px;word-break:break-all">' + esc(url) + '</p>' +
-      '<button class="btn ghost" id="cl">Schliessen</button>',
-      () => $("#cl").addEventListener("click", closeModal)); }
-  });
-
-  $("#btnSaveProfile").addEventListener("click", async () => {
-    const n = $("#setName").value.trim();
-    if(!n){ toast("Bitte einen Namen eingeben"); return; }
-    const newSlot = $("#setSlot").value;
-    me.name = n; me.slot = newSlot; saveLocal();
-    await store.setName(newSlot, n);
-    toast("Profil gespeichert");
-    renderAll();
-  });
-
-  $("#btnImport").addEventListener("click", () => $("#fileInput").click());
-  $("#fileInput").addEventListener("change", e => {
-    const f = e.target.files[0]; if(!f) return;
-    const rd = new FileReader();
-    rd.onload = () => importJson(rd.result);
-    rd.readAsText(f);
-    e.target.value = "";
-  });
-  $("#btnExport").addEventListener("click", exportJson);
-  $("#btnWipe").addEventListener("click", () => {
-    const n = summary(me.slot,"all").n;
-    if(!n){ toast("Du hast noch keine Workouts"); return; }
-    confirmModal("Alle deine Workouts löschen?",
-      n + " Einträge werden entfernt. Die Workouts deines Gegners bleiben bestehen.",
-      async () => { await store.wipeMine(); toast("Deine Workouts wurden gelöscht"); });
-  });
-
-  $("#modalBg").addEventListener("click", e => { if(e.target.id === "modalBg") closeModal(); });
-  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+  // Code aus dem Einladungslink vorbelegen: …/index.html#TH7K2M
+  const h = location.hash.replace('#','').trim().toUpperCase();
+  if(h && !state.duel) $('#dCode').value = h;
 }
 
-async function init(){
-  loadLocal();
-  applyTheme();
-  $("#inDate").value = todayStr();
-  bindUi();
-  initGate();
-  updateCalc();
+/* ---------- 5. Timer ---------- */
+const TIMER_TOTAL = 20 * 60;
+let timer = { remaining:TIMER_TOTAL, running:false, endAt:0, tick:null, rounds:0, wakeLock:null };
 
-  if(me.code){
-    $("#setName").value = me.name;
-    $("#setSlot").value = me.slot;
-    showGate(false);
-    await connect();
-  }else{
-    showGate(true);
-    setConnUi();
+function timerRender(){
+  const r = Math.max(0, Math.round(timer.remaining));
+  $('#timerTime').textContent = Math.floor(r/60) + ':' + pad(r%60);
+  $('#rCount').textContent = timer.rounds;
+  const circ = 2 * Math.PI * 54;
+  $('#ringProg').setAttribute('stroke-dashoffset', String(circ * (1 - r/TIMER_TOTAL)));
+  $('#timerState').textContent = timer.running ? 'Läuft' : (r === 0 ? 'Fertig!' : (r < TIMER_TOTAL ? 'Pause' : 'Bereit'));
+}
+function timerStart(){
+  if(timer.running || timer.remaining <= 0) return;
+  ensureAudio();
+  timer.running = true;
+  timer.endAt = Date.now() + timer.remaining*1000;
+  timer.tick = setInterval(() => {
+    timer.remaining = (timer.endAt - Date.now())/1000;
+    if(timer.remaining <= 0){ timer.remaining = 0; timerStop(); timerFinished(); }
+    timerRender();
+  }, 200);
+  requestWakeLock();
+  timerRender();
+}
+function timerStop(){
+  timer.running = false;
+  if(timer.tick){ clearInterval(timer.tick); timer.tick = null; }
+  releaseWakeLock();
+  timerRender();
+}
+function timerReset(){
+  timerStop();
+  timer.remaining = TIMER_TOTAL;
+  timer.rounds = 0;
+  timerRender();
+}
+function timerFinished(){
+  beep();
+  if(navigator.vibrate) navigator.vibrate([250,120,250,120,450]);
+  openModal(
+    '<h3>Zeit um! 🔔</h3><p class="muted tiny" style="margin:0 0 14px">20 Minuten AMRAP geschafft. Wie viele Runden hast du gemacht?</p>' +
+    '<label class="field"><span>Runden</span><input type="number" id="mRounds" step="0.5" min="0" value="' + timer.rounds + '"></label>' +
+    '<label class="field"><span>Notiz (optional)</span><textarea id="mNotes" placeholder="Wie lief es?"></textarea></label>' +
+    '<button class="btn" id="mSave">Workout speichern</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="mCancel">Später</button>',
+    () => {
+      $('#mSave').addEventListener('click', () => {
+        const r = parseFloat($('#mRounds').value);
+        if(isNaN(r) || r < 0){ toast('Bitte gültige Rundenzahl eingeben'); return; }
+        addWorkout(todayStr(), r, $('#mNotes').value.trim());
+        closeModal(); timerReset();
+      });
+      $('#mCancel').addEventListener('click', closeModal);
+    }
+  );
+}
+async function requestWakeLock(){
+  try{ if('wakeLock' in navigator) timer.wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+}
+function releaseWakeLock(){ try{ if(timer.wakeLock){ timer.wakeLock.release(); timer.wakeLock = null; } }catch(e){} }
+
+/* ---------- 5b. Aufwärmen ----------
+   Drei Phasen à 2:30 (Puls hoch / Mobility / Ramp-up), danach optional
+   2 Minuten Pause. Der Ramp-up ist bewusst entschärft: Dead Hang statt
+   Pull-Ups, erhöhte Push-Ups - aufwärmen, ohne Pulver zu verschiessen. */
+const WARM_PHASE = 150;               // 2:30 pro Phase
+const WARM_REST  = 120;               // optionale Pause danach
+const WARM = [
+  { name:'Puls hoch', note:'Locker bleiben - du sollst warm werden, nicht ausser Atem kommen.', items:[
+    { t:'0:00', x:'Seilspringen, Hampelmänner oder lockeres Joggen an Ort' },
+    { t:'1:30', x:'Tempo leicht anziehen, Arme aktiv mitnehmen' },
+    { t:'2:15', x:'Ausrollen, tief durchatmen' }
+  ]},
+  { name:'Mobility', note:'Im Fluss bewegen statt statisch dehnen - statisches Dehnen vor dem Workout kostet Kraft.', items:[
+    { t:'0:00', x:'10× Armkreisen vorwärts, 10× rückwärts' },
+    { t:'0:30', x:'30 s Dead Hang an der Stange (Schultern + Griff)' },
+    { t:'1:05', x:'30 s Handgelenke: im Vierfüsslerstand vor/zurück schaukeln' },
+    { t:'1:40', x:'10× tiefe Kniebeuge, unten 2-3 s sitzen, Knie nach aussen' },
+    { t:'2:10', x:'5× Inchworm (Hände nach vorne laufen bis Plank, zurück)' }
+  ]},
+  { name:'Ramp-up', note:'Alles langsam und deutlich unter der Belastungsgrenze. Kein einziger Pull-Up - die brauchst du gleich.', items:[
+    { t:'0:00', x:'30 s Dead Hang + 5× Scapular Pulls (Arme gestreckt, nur Schulterblätter ziehen)' },
+    { t:'0:50', x:'8× Push-Ups erhöht (Hände auf Bank oder Fensterbank)' },
+    { t:'1:30', x:'8× Air Squats in Workout-Tempo' },
+    { t:'2:00', x:'Kurz ausschütteln, Position an der Stange klären' }
+  ]},
+  { name:'Pause', note:'Kreatinphosphat füllt sich wieder auf. Jetzt nichts mehr machen - dann Uhr starten.', items:[
+    { t:'0:00', x:'Stehen bleiben, ruhig atmen, trinken' },
+    { t:'1:30', x:'Zur Stange stellen, Startposition einnehmen' }
+  ]}
+];
+
+let warm = { idx:0, remaining:WARM_PHASE, running:false, endAt:0, tick:null, done:false, withRest:false };
+
+function warmLen(i){ return i === 3 ? WARM_REST : WARM_PHASE; }
+function warmPhases(){ return warm.withRest ? 4 : 3; }
+
+function warmRender(){
+  const p   = WARM[warm.idx];
+  const len = warmLen(warm.idx);
+  const r   = Math.max(0, Math.ceil(warm.remaining));
+
+  $('#warmTime').textContent = Math.floor(r/60) + ':' + pad(r%60);
+  $('#warmTime').classList.toggle('urgent', warm.running && r <= 5);
+  $('#warmPhase').textContent = warm.done
+    ? 'Aufwärmen fertig'
+    : (warm.running ? '' : 'Bereit · ') + 'Phase ' + (warm.idx+1) + ' von ' + warmPhases() + ' · ' + p.name;
+  $('#warmBar').style.width = (100 * (1 - r/len)) + '%';
+  $('#warmNote').textContent = warm.done ? 'Jetzt die AMRAP-Uhr starten.' : p.note;
+
+  // Aufgaben der laufenden Phase, die bereits dran ist, hervorheben
+  const elapsed = len - r;
+  $('#warmList').innerHTML = p.items.map((it, i) => {
+    const sec  = parseInt(it.t.split(':')[0],10)*60 + parseInt(it.t.split(':')[1],10);
+    const next = p.items[i+1];
+    const nsec = next ? parseInt(next.t.split(':')[0],10)*60 + parseInt(next.t.split(':')[1],10) : len;
+    const on   = warm.running && elapsed >= sec && elapsed < nsec;
+    return '<li style="' + (on ? 'border-color:var(--accent)' : (warm.running && elapsed >= nsec ? 'opacity:.45' : '')) + '">' +
+           '<b>' + it.t + '</b><span>' + it.x + '</span></li>';
+  }).join('');
+
+  $('#warmSteps').innerHTML = WARM.slice(0, warmPhases()).map((ph, i) =>
+    '<div class="warm-step' + (i === warm.idx && !warm.done ? ' active' : '') +
+    (i < warm.idx || warm.done ? ' done' : '') + '">' +
+    '<div class="n">Phase ' + (i+1) + '</div><div class="t">' + ph.name + '</div>' +
+    '<div class="d">' + Math.floor(warmLen(i)/60) + ':' + pad(warmLen(i)%60) + '</div></div>'
+  ).join('');
+
+  const total = warmPhases() === 4 ? 3*WARM_PHASE + WARM_REST : 3*WARM_PHASE;
+  $('#warmTotal').textContent = Math.floor(total/60) + ':' + pad(total%60) + ' total';
+  $('#wStart').textContent = warm.running ? 'Pause' : (warm.done ? 'Nochmal' : (warm.remaining < warmLen(warm.idx) ? 'Weiter' : 'Start'));
+}
+
+function warmStart(){
+  if(warm.done) warmReset();
+  ensureAudio();
+  warm.running = true;
+  warm.endAt = Date.now() + warm.remaining*1000;
+  warm.tick = setInterval(() => {
+    warm.remaining = (warm.endAt - Date.now())/1000;
+    if(warm.remaining <= 0){ warmNext(true); return; }
+    warmRender();
+  }, 200);
+  requestWakeLock();
+  warmRender();
+}
+function warmStop(){
+  warm.running = false;
+  if(warm.tick){ clearInterval(warm.tick); warm.tick = null; }
+  releaseWakeLock();
+  warmRender();
+}
+function warmNext(auto){
+  const wasRunning = warm.running;
+  warmStop();
+  if(warm.idx < warmPhases() - 1){
+    warm.idx++;
+    warm.remaining = warmLen(warm.idx);
+    if(auto){ warmBeep(2); if(navigator.vibrate) navigator.vibrate([160,90,160]); }
+    warmRender();
+    if(wasRunning) warmStart();
+  } else {
+    warm.done = true;
+    warm.remaining = 0;
+    warmRender();
+    if(auto){ warmBeep(3); if(navigator.vibrate) navigator.vibrate([220,110,220,110,380]); }
+    warmFinished();
   }
 }
-init();
+function warmReset(){
+  warmStop();
+  warm.idx = 0; warm.remaining = WARM_PHASE; warm.done = false;
+  warmRender();
+}
+function warmFinished(){
+  if(warm.withRest || warmPhases() === 4){
+    toast('Aufgewärmt und ausgeruht – jetzt die AMRAP-Uhr starten 🔥', true);
+    return;
+  }
+  openModal(
+    '<h3>Aufgewärmt 🔥</h3><p class="muted tiny" style="margin:0 0 14px">Vor dem Start noch rund 2 Minuten verschnaufen – ' +
+    'dann sind die Kraftspeicher wieder voll und die erste Runde fühlt sich nicht wie ein Kaltstart an.</p>' +
+    '<button class="btn" id="mRest">2 Min Pause starten</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="mGo">Direkt zum AMRAP</button>',
+    () => {
+      $('#mRest').addEventListener('click', () => {
+        closeModal();
+        warm.withRest = true; warm.done = false; warm.idx = 3; warm.remaining = WARM_REST;
+        warmRender(); warmStart();
+      });
+      $('#mGo').addEventListener('click', () => { closeModal(); warm.withRest = false; });
+    }
+  );
+}
+/** Kurzer Phasenwechsel-Ton (n Töne), unabhängig vom langen Timer-Signal */
+function warmBeep(n){
+  if(!state.settings.sound) return;
+  ensureAudio();
+  if(!audioCtx) return;
+  try{
+    const ctx = audioCtx;
+    for(let i=0; i<n; i++){
+      const t = i*.22, o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = (i === n-1) ? 1050 : 720;
+      g.gain.setValueAtTime(.0001, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(.4, ctx.currentTime + t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + t + .2);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .24);
+    }
+  }catch(e){}
+}
+
+/* AudioContext beim Start-Klick anlegen: ohne diese Nutzergeste bleibt er sonst
+   stumm – vor allem, wenn die Seite in einem iframe eingebettet läuft. */
+let audioCtx = null;
+function ensureAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+}
+
+/** Kurze Tonfolge über die WebAudio-API (keine externen Dateien nötig) */
+function beep(){
+  if(!state.settings.sound) return;
+  ensureAudio();
+  if(!audioCtx) return;
+  try{
+    const ctx = audioCtx;
+    [0, .35, .7, 1.15].forEach((t, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = i === 3 ? 1180 : 820;
+      g.gain.setValueAtTime(.0001, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(.5, ctx.currentTime + t + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + t + (i === 3 ? .7 : .26));
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .8);
+    });
+  }catch(e){}
+}
+
+/* ---------- 6. Workouts, Badges, Toasts, Konfetti ---------- */
+function addWorkout(date, rounds, notes){
+  const before = computeStats(allWorkouts()).best;
+  // Pull-Ups/Push-Ups/Squats/Reps werden überall aus `rounds` berechnet und
+  // deshalb bewusst nicht mitgespeichert – das hält den Datensatz klein für die
+  // Geräte-Synchronisation der Library (dort gilt ein Limit pro Übung).
+  const w = {
+    id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    seasonId: state.currentSeasonId,
+    date, rounds, notes: notes || '',
+    created: Date.now()
+  };
+  state.workouts.push(w);
+  save();
+  duelSync();
+  renderAll();
+  if(ui.view === 'charts') renderCharts();
+
+  const isPr = rounds > before && state.workouts.length > 1;
+  if(isPr){ confetti(); toast('🥇 Neuer persönlicher Rekord: ' + round1(rounds) + ' Runden!', true); }
+  else { toast('✅ Workout gespeichert · ' + nf(rounds*REPS_PER_ROUND) + ' Wiederholungen'); }
+  checkBadges();
+}
+
+function deleteWorkout(id){
+  const w = state.workouts.find(x => x.id === id);
+  if(!w) return;
+  openModal(
+    '<h3>Workout löschen?</h3><p class="muted tiny" style="margin:0 0 16px">' +
+      fmtDate(w.date) + ' · ' + round1(w.rounds) + ' Runden. Das lässt sich nicht rückgängig machen.</p>' +
+    '<button class="btn danger" id="okDel">Löschen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="noDel">Abbrechen</button>',
+    () => {
+      $('#okDel').addEventListener('click', () => {
+        state.workouts = state.workouts.filter(x => x.id !== id);
+        state.duelRemoved.push(id);          // Tombstone: darf nicht vom anderen Gerät zurückkommen
+        save(); duelSync(); renderAll(); if(ui.view === 'charts') renderCharts();
+        checkBadges();
+        closeModal(); toast('Workout gelöscht');
+      });
+      $('#noDel').addEventListener('click', closeModal);
+    }
+  );
+}
+
+function badgeState(){
+  const s = computeStats(allWorkouts());
+  return { count:s.count, best:s.best, prBeaten:s.prBeaten };
+}
+/** Abzeichen spiegeln immer den aktuellen Datenstand: was nicht mehr erfüllt ist, wird wieder gesperrt */
+function checkBadges(){
+  const bs = badgeState();
+  let unlocked = [], changed = false;
+  BADGES.forEach(b => {
+    const met = b.test(bs);
+    if(met && !state.badges[b.id]){ state.badges[b.id] = todayStr(); unlocked.push(b); changed = true; }
+    else if(!met && state.badges[b.id]){ delete state.badges[b.id]; changed = true; }
+  });
+  if(changed){ save(); renderBadges(); }
+  if(unlocked.length){
+    unlocked.forEach((b, i) => setTimeout(() => toast(b.ic + ' Abzeichen freigeschaltet: ' + b.t, true), 700 + i*900));
+    confetti();
+  }
+}
+function renderBadges(){
+  const html = BADGES.map(b => {
+    const on = !!state.badges[b.id];
+    return '<div class="badge' + (on ? ' on' : '') + '"><div class="ic">' + b.ic + '</div><div class="t">' + b.t + '</div>' +
+      '<div class="dt">' + (on ? fmtShort(state.badges[b.id]) : 'offen') + '</div></div>';
+  }).join('');
+  $('#badgesDash').innerHTML = html;
+  $('#badgesAll').innerHTML = html;
+  const n = BADGES.filter(b => state.badges[b.id]).length;
+  $('#badgeCount').textContent = n + ' / ' + BADGES.length;
+  $('#badgeCount2').textContent = n + ' / ' + BADGES.length;
+}
+
+function toast(msg, gold){
+  const el = document.createElement('div');
+  el.className = 'toast' + (gold ? ' gold' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 420); }, 2900);
+}
+
+/** Konfetti ohne externe Bibliothek */
+function confetti(){
+  const cv = $('#confetti'), ctx = cv.getContext('2d');
+  cv.style.display = 'block';
+  cv.width = innerWidth; cv.height = innerHeight;
+  const colors = ['#FF5A1F','#FFC857','#00E5A0','#4DA3FF','#FFFFFF'];
+  const parts = Array.from({length:130}, () => ({
+    x:Math.random()*cv.width, y:-20 - Math.random()*cv.height*.4,
+    w:6+Math.random()*7, h:8+Math.random()*10,
+    vy:2.4+Math.random()*3.6, vx:-1.6+Math.random()*3.2,
+    rot:Math.random()*6.28, vr:-.18+Math.random()*.36,
+    c:colors[(Math.random()*colors.length)|0]
+  }));
+  const t0 = performance.now();
+  (function frame(t){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.vy += .035;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+    });
+    if(t - t0 < 3200) requestAnimationFrame(frame);
+    else { ctx.clearRect(0,0,cv.width,cv.height); cv.style.display = 'none'; }
+  })(t0);
+}
+
+/* ---------- 7. Modal, Season-Lifecycle, Export/Import ---------- */
+function openModal(html, after){
+  $('#modal').innerHTML = html;
+  $('#modalBg').classList.add('open');
+  if(after) after();
+}
+function closeModal(){ $('#modalBg').classList.remove('open'); }
+
+/** Prüft beim Start, ob die 30 Tage abgelaufen sind, und fragt, wie es weitergeht */
+function checkSeasonEnd(){
+  const s = currentSeason();
+  if(s.mode !== 'challenge' || !s.endDate || s.status !== 'active') return;
+  if(todayStr() <= s.endDate) return;
+
+  const st = computeStats(seasonWorkouts(s.id));
+  openModal(
+    '<h3>Glückwunsch! 🎉</h3>' +
+    '<p class="muted tiny" style="margin:2px 0 14px">Du hast die ' + s.durationDays + '-Tage-Challenge (Season ' + s.number + ') abgeschlossen. ' +
+    'Wie möchtest du weitermachen? Alle bisherigen Daten bleiben erhalten.</p>' +
+    '<div class="grid g3" style="margin-bottom:14px">' +
+      '<div class="stat"><div class="lbl">Workouts</div><div class="val" style="font-size:22px">' + st.count + '</div></div>' +
+      '<div class="stat gold"><div class="lbl">Rekord</div><div class="val" style="font-size:22px">' + (st.best ? round1(st.best) : '–') + '</div></div>' +
+      '<div class="stat mint"><div class="lbl">Ø</div><div class="val" style="font-size:22px">' + (st.count ? st.avg : '–') + '</div></div>' +
+    '</div>' +
+    '<button class="btn" id="opExtend">Weitere 30 Tage anhängen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="opUnlimited">Unbegrenzt weitermachen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="opNew">Neue Season starten</button>',
+    () => {
+      $('#opExtend').addEventListener('click', () => { extendSeason(30); closeModal(); });
+      $('#opUnlimited').addEventListener('click', () => { goUnlimited(); closeModal(); });
+      $('#opNew').addEventListener('click', () => { startNewSeason(); closeModal(); });
+    }
+  );
+}
+
+function extendSeason(days){
+  const s = currentSeason();
+  const base = (s.endDate && s.endDate > todayStr()) ? s.endDate : todayStr();
+  s.mode = 'challenge';
+  s.endDate = addDays(base, days);
+  s.durationDays = daysBetween(s.startDate, s.endDate) + 1;
+  save(); renderAll(); toast('➕ Challenge bis ' + fmtDate(s.endDate) + ' verlängert');
+}
+function goUnlimited(){
+  const s = currentSeason();
+  s.mode = 'unlimited'; s.endDate = null;
+  save(); renderAll(); toast('♾️ Unbegrenzter Modus aktiv');
+}
+function startNewSeason(){
+  const old = currentSeason();
+  old.status = 'completed';
+  if(!old.endDate) old.endDate = todayStr();
+  const num = Math.max.apply(null, state.seasons.map(s => s.number)) + 1;
+  const id  = Math.max.apply(null, state.seasons.map(s => s.id)) + 1;
+  const se = freshSeason(num, todayStr(), DEFAULT_DURATION);
+  se.id = id;
+  state.seasons.push(se);
+  state.currentSeasonId = id;
+  save(); renderAll(); if(ui.view === 'charts') renderCharts();
+  confetti(); toast('🚀 Season ' + num + ' gestartet – 30 neue Tage');
+}
+
+function download(filename, content, type){
+  const blob = new Blob([content], { type: type || 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+function exportJson(){
+  download('tom-holland-challenge_' + todayStr() + '.json', JSON.stringify(state, null, 2));
+  toast('⬇️ JSON exportiert');
+}
+function exportCsv(){
+  const rows = [['Datum','Season','Runden','PullUps','PushUps','Squats','Wiederholungen','Notiz']];
+  allWorkouts().forEach(w => rows.push([
+    w.date, 'S' + (state.seasons.find(s => s.id === w.seasonId) || {number:'?'}).number,
+    w.rounds, w.rounds*PER_ROUND.pull, w.rounds*PER_ROUND.push, w.rounds*PER_ROUND.squat,
+    w.rounds*REPS_PER_ROUND, '"' + String(w.notes||'').replace(/"/g,'""') + '"'
+  ]));
+  download('tom-holland-challenge_' + todayStr() + '.csv', rows.map(r => r.join(';')).join('\n'), 'text/csv');
+  toast('⬇️ CSV exportiert');
+}
+function importJson(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || !Array.isArray(data.workouts) || !Array.isArray(data.seasons)) throw new Error('Format');
+      openModal(
+        '<h3>Import bestätigen</h3><p class="muted tiny" style="margin:0 0 16px">' +
+          data.workouts.length + ' Workouts, ' + data.seasons.length + ' Season(s). ' +
+          'Deine aktuellen Daten werden ersetzt (vorher wird automatisch ein Backup angelegt).</p>' +
+        '<button class="btn" id="okImp">Importieren</button>' +
+        '<button class="btn ghost" style="margin-top:8px" id="noImp">Abbrechen</button>',
+        () => {
+          $('#okImp').addEventListener('click', () => {
+            makeBackup(true);
+            const keepDuel = state.duel, keepTomb = state.duelRemoved;
+            state = Object.assign(defaultState(), data);
+            state.duel = keepDuel; state.duelRemoved = keepTomb;   // Duell überlebt den Import
+            save(); applyTheme(); renderAll(); duelSync(); if(ui.view === 'charts') renderCharts();
+            closeModal(); toast('✅ Daten importiert');
+          });
+          $('#noImp').addEventListener('click', closeModal);
+        }
+      );
+    }catch(e){ toast('⚠️ Datei konnte nicht gelesen werden'); }
+  };
+  reader.readAsText(file);
+}
+function getBackups(){
+  try{ return JSON.parse(localStorage.getItem(LS_BACKUPS) || '[]'); }catch(e){ return []; }
+}
+function makeBackup(silent){
+  const list = getBackups();
+  list.push({ ts: Date.now(), data: JSON.parse(JSON.stringify(state)) });
+  while(list.length > 3) list.shift();                 // nur die letzten 3 behalten
+  try{ localStorage.setItem(LS_BACKUPS, JSON.stringify(list)); }
+  catch(e){ toast('⚠️ Backup fehlgeschlagen – Speicher nicht verfügbar oder voll'); return; }
+  renderDataView();
+  if(!silent) toast('💾 Backup erstellt');
+}
+function restoreBackup(){
+  const list = getBackups();
+  if(!list.length){ toast('Kein Backup vorhanden'); return; }
+  openModal(
+    '<h3>Backup wiederherstellen</h3><p class="muted tiny" style="margin:0 0 14px">Wähle einen Stand. Die aktuellen Daten werden ersetzt.</p>' +
+    list.slice().reverse().map((b, i) =>
+      '<button class="btn ghost" style="margin-bottom:8px" data-bi="' + (list.length-1-i) + '">' +
+        new Date(b.ts).toLocaleString('de-CH') + ' · ' + b.data.workouts.length + ' Workouts</button>'
+    ).join('') +
+    '<button class="btn danger" style="margin-top:6px" id="noRes">Abbrechen</button>',
+    () => {
+      $$('#modal [data-bi]').forEach(btn => btn.addEventListener('click', () => {
+        const b = getBackups()[Number(btn.dataset.bi)];
+        if(!b) return;
+        const keepDuelB = state.duel, keepTombB = state.duelRemoved;
+        state = Object.assign(defaultState(), b.data);
+        state.duel = keepDuelB; state.duelRemoved = keepTombB;
+        save(); applyTheme(); renderAll(); duelSync(); if(ui.view === 'charts') renderCharts();
+        closeModal(); toast('♻️ Backup wiederhergestellt');
+      }));
+      $('#noRes').addEventListener('click', closeModal);
+    }
+  );
+}
+function hardReset(){
+  openModal(
+    '<h3>Wirklich alles löschen?</h3><p class="muted tiny" style="margin:0 0 16px">Alle Workouts, Seasons und Abzeichen werden entfernt. ' +
+    'Exportiere vorher ein JSON, falls du die Daten behalten willst.</p>' +
+    '<button class="btn danger" id="okRst">Ja, alles löschen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="noRst">Abbrechen</button>',
+    () => {
+      $('#okRst').addEventListener('click', () => {
+        makeBackup(true);
+        if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
+        duelConn.on = false; rival = null;
+        state = defaultState(); save(); applyTheme(); renderAll(); renderDuel();
+        closeModal(); toast('Alle Daten zurückgesetzt (Backup liegt vor)');
+      });
+      $('#noRst').addEventListener('click', closeModal);
+    }
+  );
+}
+
+/* ---------- 8. Init & Events ---------- */
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', state.theme);
+  $('#themeBtn').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+  document.querySelector('meta[name=theme-color]').setAttribute('content', state.theme === 'dark' ? '#0B0D10' : '#F3F5F8');
+}
+function switchView(v){
+  ui.view = v;
+  $$('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v));
+  $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  window.scrollTo({ top:0, behavior:'smooth' });
+  if(v === 'charts') renderCharts();
+  if(v === 'duel') renderDuel();
+}
+function updateCalc(){
+  const r = parseFloat($('#inRounds').value) || 0;
+  $('#cPull').textContent = nf(r*PER_ROUND.pull);
+  $('#cPush').textContent = nf(r*PER_ROUND.push);
+  $('#cSquat').textContent = nf(r*PER_ROUND.squat);
+  $('#cTotal').textContent = nf(r*REPS_PER_ROUND);
+}
+function randomQuote(){ $('#quote').textContent = '„' + QUOTES[(Math.random()*QUOTES.length)|0] + '"'; }
+
+function init(){
+  load();
+  applyTheme();
+  $('#inDate').value = todayStr();
+  randomQuote();
+  renderAll();
+  timerRender();
+  warmRender();
+  bindDuel();
+  renderDuel();
+  if(state.duel && CLOUD_READY){
+    duelConnect().catch(e => { console.error(e); duelConn.on = false; renderDuel(); });
+  }
+  checkBadges();
+  checkSeasonEnd();
+
+  // Navigation
+  $$('.tab').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+
+  // Theme
+  $('#themeBtn').addEventListener('click', () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    save(); applyTheme();
+    if(ui.view === 'charts') renderCharts();
+  });
+
+  // Workout-Formular
+  $('#inRounds').addEventListener('input', updateCalc);
+  $('#saveWorkout').addEventListener('click', () => {
+    const date = $('#inDate').value || todayStr();
+    const rounds = parseFloat($('#inRounds').value);
+    if(isNaN(rounds) || rounds < 0){ toast('⚠️ Bitte Rundenzahl eingeben'); return; }
+    addWorkout(date, rounds, $('#inNotes').value.trim());
+    $('#inRounds').value = ''; $('#inNotes').value = ''; $('#inDate').value = todayStr();
+    updateCalc();
+  });
+  $('#searchNotes').addEventListener('input', e => { ui.search = e.target.value; renderLogList(); });
+
+  // Scope-Umschalter
+  const bindScope = (sel, key, after) => $$(sel + ' button').forEach(b => b.addEventListener('click', () => {
+    $$(sel + ' button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    ui[key] = b.dataset.scope;
+    after();
+  }));
+  bindScope('#logScope', 'logScope', renderLogList);
+  bindScope('#chartScope', 'scope', () => { renderCharts(); renderStats(); syncScopeButtons(); });
+  bindScope('#statScope', 'scope', () => { renderStats(); if(ui.view === 'charts') renderCharts(); syncScopeButtons(); });
+
+  // Timer
+  $('#wStart').addEventListener('click', () => { warm.running ? warmStop() : warmStart(); });
+  $('#wSkip').addEventListener('click', () => warmNext(false));
+  $('#wReset').addEventListener('click', () => { warm.withRest = false; warmReset(); });
+  $('#tStart').addEventListener('click', timerStart);
+  $('#tPause').addEventListener('click', timerStop);
+  $('#tReset').addEventListener('click', timerReset);
+  $('#rPlus').addEventListener('click', () => { timer.rounds++; timerRender(); if(navigator.vibrate) navigator.vibrate(18); });
+  $('#rMinus').addEventListener('click', () => { timer.rounds = Math.max(0, timer.rounds-1); timerRender(); });
+  $('#tSave').addEventListener('click', () => {
+    if(timer.rounds <= 0){ toast('Erst Runden zählen oder im Tab „Training" erfassen'); return; }
+    addWorkout(todayStr(), timer.rounds, '');
+    timerReset();
+  });
+
+  // Kalender
+  $('#calPrev').addEventListener('click', () => { ui.calMonth.setMonth(ui.calMonth.getMonth()-1); renderCalendar(); });
+  $('#calNext').addEventListener('click', () => { ui.calMonth.setMonth(ui.calMonth.getMonth()+1); renderCalendar(); });
+
+  // Motivation
+  $('#newQuote').addEventListener('click', randomQuote);
+
+  // Season-Steuerung
+  $('#btnExtend').addEventListener('click', () => extendSeason(30));
+  $('#btnUnlimited').addEventListener('click', goUnlimited);
+  $('#btnNewSeason').addEventListener('click', () => {
+    openModal('<h3>Neue Season starten?</h3><p class="muted tiny" style="margin:0 0 16px">Season ' + currentSeason().number +
+      ' wird abgeschlossen und archiviert. Alle Daten bleiben in der All-Time-Statistik erhalten.</p>' +
+      '<button class="btn" id="okNs">Season starten</button>' +
+      '<button class="btn ghost" style="margin-top:8px" id="noNs">Abbrechen</button>',
+      () => {
+        $('#okNs').addEventListener('click', () => { startNewSeason(); closeModal(); });
+        $('#noNs').addEventListener('click', closeModal);
+      });
+  });
+
+  // Daten
+  $('#btnExport').addEventListener('click', exportJson);
+  $('#btnCsv').addEventListener('click', exportCsv);
+  $('#btnImport').addEventListener('click', () => $('#fileInput').click());
+  $('#fileInput').addEventListener('change', e => { if(e.target.files[0]) importJson(e.target.files[0]); e.target.value = ''; });
+  $('#btnBackup').addEventListener('click', () => makeBackup(false));
+  $('#btnRestore').addEventListener('click', restoreBackup);
+  $('#btnReset').addEventListener('click', hardReset);
+
+  // Einstellungen
+  $('#setGoal').addEventListener('change', e => {
+    state.settings.goalWorkouts = clamp(parseInt(e.target.value,10) || 14, 1, 30);
+    e.target.value = state.settings.goalWorkouts;
+    save(); renderAll();
+  });
+  $('#setSound').addEventListener('change', e => { state.settings.sound = e.target.value === '1'; save(); });
+
+  // Modal schliessen bei Klick auf den Hintergrund
+  $('#modalBg').addEventListener('click', e => { if(e.target.id === 'modalBg') closeModal(); });
+
+  // Timer läuft weiter, wenn der Tab im Hintergrund war
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden && timer.running){
+      timer.remaining = Math.max(0, (timer.endAt - Date.now())/1000);
+      if(timer.remaining === 0){ timerStop(); timerFinished(); }
+      timerRender();
+    }
+  });
+  window.addEventListener('resize', () => { const c = $('#confetti'); c.width = innerWidth; c.height = innerHeight; });
+}
+
+/** Hält beide Scope-Schalter (Charts/Stats) synchron */
+function syncScopeButtons(){
+  ['#chartScope','#statScope'].forEach(sel => $$(sel + ' button').forEach(b => {
+    b.classList.toggle('active', b.dataset.scope === ui.scope);
+  }));
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
