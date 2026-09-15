@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0D10">
+<title>Duell · Tom Holland Challenge</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+
+<!-- Chart.js via CDN. Ohne Internet läuft die Seite weiter – nur die Grafiken fehlen dann. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+/* ============================================================
+   1. Design-Tokens – identisch zum lokalen Tracker,
+      ergänzt um eine zweite Athleten-Farbe (Blau für den Gegner)
+   ============================================================ */
+:root{
+  --bg:#0B0D10; --bg-2:#0F1319; --surface:#14181F; --surface-2:#1A1F28;
+  --line:#242B36; --text:#F2F5F8; --muted:#8A94A4;
+  --accent:#FF5A1F; --accent-2:#FF8A3D;
+  --rival:#4DA3FF; --rival-2:#7FC0FF;
+  --mint:#00E5A0; --gold:#FFC857; --danger:#FF4D5E;
+  --grad:linear-gradient(135deg,#FF5A1F,#FF8A3D);
+  --grad-rival:linear-gradient(135deg,#2D7FE0,#7FC0FF);
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --radius:18px;
+}
+html[data-theme="light"]{
+  --bg:#F5F7FA; --bg-2:#EDF1F6; --surface:#FFFFFF; --surface-2:#F2F5F9;
+  --line:#DDE3EC; --text:#121821; --muted:#65718A;
+  --shadow:0 8px 24px rgba(18,24,33,.09);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased
+}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.wrap{max-width:1120px;margin:0 auto;padding:16px}
+
+/* ============================================================
+   2. Kopf & Navigation
+   ============================================================ */
+header.app{
+  position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--line)
+}
+.head-row{display:flex;align-items:center;gap:12px;padding:12px 16px}
+.logo{
+  width:42px;height:42px;border-radius:13px;background:var(--grad);display:grid;place-items:center;
+  font-size:21px;box-shadow:0 8px 20px rgba(255,90,31,.3);flex:none
+}
+.brand h1{font-size:17px;font-weight:900;letter-spacing:-.02em}
+.brand small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
+  display:grid;place-items:center;font-size:17px;flex:none
+}
+.head-row .icon-btn:first-of-type{margin-left:auto}
+
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
+}
+.tabs-inner{display:flex;max-width:1120px;margin:0 auto}
+.tab{
+  flex:1;padding:9px 4px 10px;color:var(--muted);font-size:10.5px;font-weight:800;
+  display:grid;gap:3px;justify-items:center;letter-spacing:.02em
+}
+.tab .ic{font-size:19px;line-height:1}
+.tab.active{color:var(--text)}
+.tab.active .ic{transform:translateY(-1px)}
+
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ============================================================
+   3. Bausteine
+   ============================================================ */
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);margin-bottom:14px
+}
+.card h2{font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card h2 + p.sub{margin:4px 0 12px;color:var(--muted);font-size:13px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(2,1fr)}
+@media(min-width:720px){.g3{grid-template-columns:repeat(3,1fr)}}
+
+.stat{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.stat .lbl{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.stat .val{font-size:26px;font-weight:900;letter-spacing:-.03em;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat .hint{font-size:11.5px;color:var(--muted);margin-top:2px}
+.stat.me .val{color:var(--accent)}
+.stat.rival .val{color:var(--rival)}
+.stat.mint .val{color:var(--mint)}
+.stat.gold .val{color:var(--gold)}
+
+.bar{height:10px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.bar > span{display:block;height:100%;background:var(--grad);border-radius:99px;width:0;
+  transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bar.rival > span{background:var(--grad-rival)}
+
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:var(--muted)}
+.tiny{font-size:12px}
+.hr{height:1px;background:var(--line);margin:14px 0}
+
+.btn{
+  width:100%;padding:14px;border-radius:14px;background:var(--grad);color:#fff;
+  font-weight:800;font-size:15px;box-shadow:0 8px 20px rgba(255,90,31,.26)
+}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+.btn.mint{background:linear-gradient(135deg,#00E5A0,#5BFFD0);color:#04281C;box-shadow:none}
+.btn.danger{background:var(--danger);box-shadow:none}
+.btn.sm{padding:10px;font-size:13.5px;border-radius:12px}
+.btn:active{transform:scale(.99)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+
+.field{display:block;margin-bottom:12px}
+.field > span{display:block;font-size:11.5px;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{
+  width:100%;padding:13px;border-radius:13px;background:var(--surface-2);
+  border:1px solid var(--line);outline:none
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent)}
+.field textarea{min-height:76px;resize:vertical}
+
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:99px;padding:5px 11px;font-size:12px;font-weight:700;color:var(--muted)}
+.pill.on{color:var(--mint);border-color:color-mix(in srgb,var(--mint) 40%,var(--line))}
+.pill.warn{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 40%,var(--line))}
+.pill.off{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{color:var(--muted);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:9px;white-space:nowrap}
+.seg button.active{background:var(--grad);color:#fff}
+
+/* ============================================================
+   4. Duell-Ansicht
+   ============================================================ */
+.versus{
+  position:relative;overflow:hidden;border-radius:22px;padding:18px;margin-bottom:14px;
+  background:linear-gradient(150deg,rgba(255,90,31,.18),rgba(20,24,31,.85) 48%,rgba(77,163,255,.18)),var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow)
+}
+html[data-theme="light"] .versus{
+  background:linear-gradient(150deg,rgba(255,90,31,.12),rgba(255,255,255,.95) 48%,rgba(77,163,255,.14)),var(--surface)
+}
+.vs-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.vs-side{text-align:center;min-width:0}
+.vs-side .who{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vs-side .score{font-size:44px;font-weight:900;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums}
+.vs-side.me .score{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vs-side.rival .score{background:var(--grad-rival);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vs-side .unit{font-size:11.5px;color:var(--muted);margin-top:1px}
+.vs-mid{
+  width:44px;height:44px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;font-size:17px;font-weight:900;color:var(--muted);flex:none
+}
+.vs-lead{
+  margin-top:14px;text-align:center;font-size:14.5px;font-weight:800;line-height:1.4;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:11px 13px
+}
+.vs-bar{display:flex;height:12px;border-radius:99px;overflow:hidden;margin-top:14px;border:1px solid var(--line)}
+.vs-bar i{display:block;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.vs-bar i.me{background:var(--grad)}
+.vs-bar i.rival{background:var(--grad-rival)}
+.vs-legend{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted)}
+
+.duel-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.duel-table th,.duel-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center}
+.duel-table th{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.duel-table td:first-child,.duel-table th:first-child{text-align:left;color:var(--muted);font-size:12.5px}
+.duel-table td{font-variant-numeric:tabular-nums;font-weight:800}
+.duel-table td.win{color:var(--mint)}
+.duel-table tr:last-child td{border-bottom:0}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:5px}
+.dot.me{background:var(--accent)}
+.dot.rival{background:var(--rival)}
+
+/* Verlaufs-Einträge */
+.entry{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
+  background:var(--surface-2);border:1px solid var(--line);margin-bottom:8px;animation:up .25s ease
+}
+.entry.me{border-left:3px solid var(--accent)}
+.entry.rival{border-left:3px solid var(--rival)}
+.entry .val{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums;min-width:52px}
+.entry .meta{flex:1;min-width:0}
+.entry .meta b{font-size:13.5px;font-weight:800;display:block}
+.entry .meta small{color:var(--muted);font-size:11.5px;display:block;margin-top:1px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .del{color:var(--muted);font-size:17px;padding:4px 6px;border-radius:8px;flex:none}
+.entry .pr{font-size:14px}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:22px 10px}
+
+.chart-box{position:relative;height:250px}
+@media(min-width:720px){.chart-box{height:290px}}
+
+/* Onboarding-Overlay */
+.gate{
+  position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;padding:20px;overflow:auto
+}
+.gate-inner{width:100%;max-width:420px;animation:up .3s ease}
+.gate .logo{width:56px;height:56px;font-size:28px;border-radius:17px;margin:0 auto 14px}
+.gate h2{text-align:center;font-size:21px;font-weight:900;letter-spacing:-.02em;color:var(--text);
+  text-transform:none;margin-bottom:6px}
+.gate p.lead{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:20px;line-height:1.5}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.pick button{
+  padding:15px 10px;border-radius:15px;background:var(--surface-2);border:2px solid var(--line);
+  font-weight:800;font-size:15px;text-align:center
+}
+.pick button.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}
+.pick button:nth-child(2).sel{border-color:var(--rival);background:color-mix(in srgb,var(--rival) 14%,var(--surface-2))}
+
+/* Modal, Toasts */
+.modal-bg{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:18px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;
+  width:100%;max-width:400px;box-shadow:var(--shadow);animation:up .25s ease;max-height:86vh;overflow:auto}
+.modal h3{font-size:18px;font-weight:900;margin-bottom:8px}
+#toasts{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));z-index:180;
+  display:grid;gap:8px;justify-items:center;pointer-events:none;padding:0 14px}
+.toast{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 15px;
+  box-shadow:var(--shadow);font-weight:700;font-size:13.5px;animation:up .3s ease;max-width:390px;text-align:center}
+.toast.gold{border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
+
+.code-box{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:19px;font-weight:800;letter-spacing:.18em;
+  text-align:center;background:var(--surface-2);border:1px dashed var(--line);border-radius:13px;padding:13px
+}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="wrap head-row">
+    <div class="logo">⚔️</div>
+    <div class="brand">
+      <h1>Tom Holland Duell</h1>
+      <small id="headSub">Nicht verbunden</small>
+    </div>
+    <button class="icon-btn" id="themeBtn" title="Dark / Light">🌙</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ========================== DUELL ========================== -->
+  <section class="view active" id="view-duel">
+    <div class="versus">
+      <div class="vs-head">
+        <div class="vs-side me">
+          <div class="who" id="vsNameA">Du</div>
+          <div class="score" id="vsScoreA">–</div>
+          <div class="unit">Bestleistung</div>
+        </div>
+        <div class="vs-mid">VS</div>
+        <div class="vs-side rival">
+          <div class="who" id="vsNameB">Gegner</div>
+          <div class="score" id="vsScoreB">–</div>
+          <div class="unit">Bestleistung</div>
+        </div>
+      </div>
+      <div class="vs-bar"><i class="me" id="vsBarA" style="width:50%"></i><i class="rival" id="vsBarB" style="width:50%"></i></div>
+      <div class="vs-legend"><span id="vsLegA">–</span><span id="vsLegB">–</span></div>
+      <div class="vs-lead" id="vsLead">Noch keine Workouts – tragt euer erstes Training ein.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Direktvergleich</h2>
+        <div class="seg" id="duelScope">
+          <button data-scope="all" class="active">Gesamt</button>
+          <button data-scope="30">30 Tage</button>
+        </div>
+      </div>
+      <table class="duel-table">
+        <thead><tr>
+          <th></th>
+          <th><span class="dot me"></span><span id="thA">Du</span></th>
+          <th><span class="dot rival"></span><span id="thB">Gegner</span></th>
+        </tr></thead>
+        <tbody id="duelBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Weg zu Tom Holland</h2>
+      <p class="sub">27 Runden sind die Referenz</p>
+      <div class="row-between tiny muted" style="margin-bottom:5px">
+        <span id="thaName">Du</span><span id="thaPctA">0 %</span>
+      </div>
+      <div class="bar"><span id="thaBarA"></span></div>
+      <div class="row-between tiny muted" style="margin:12px 0 5px">
+        <span id="thbName">Gegner</span><span id="thaPctB">0 %</span>
+      </div>
+      <div class="bar rival"><span id="thaBarB"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Letzte Workouts</h2><span class="pill" id="liveP">live</span></div>
+      <div id="recentList"></div>
+    </div>
+  </section>
+
+  <!-- ========================== ERFASSEN ========================== -->
+  <section class="view" id="view-log">
+    <div class="card">
+      <h2>Workout erfassen</h2>
+      <p class="sub">20 Min AMRAP · 5 Pull-Ups / 10 Push-Ups / 15 Air Squats</p>
+      <label class="field"><span>Datum</span><input type="date" id="inDate"></label>
+      <label class="field"><span>Geschaffte Runden</span>
+        <input type="number" id="inRounds" min="0" max="80" step="0.5" inputmode="decimal" placeholder="z. B. 11"></label>
+      <label class="field"><span>Notiz (optional)</span>
+        <textarea id="inNotes" placeholder="Wie lief's? Pull-Ups mit Band? Müde?"></textarea></label>
+      <div class="grid g3" style="margin-bottom:14px">
+        <div class="stat"><div class="lbl">Pull-Ups</div><div class="val" id="cPull" style="font-size:21px">0</div></div>
+        <div class="stat"><div class="lbl">Push-Ups</div><div class="val" id="cPush" style="font-size:21px">0</div></div>
+        <div class="stat"><div class="lbl">Squats</div><div class="val" id="cSquat" style="font-size:21px">0</div></div>
+      </div>
+      <button class="btn" id="saveWorkout">Workout speichern</button>
+    </div>
+
+    <div class="card">
+      <h2>Deine Form</h2>
+      <div class="grid g3">
+        <div class="stat me"><div class="lbl">Bestleistung</div><div class="val" id="myBest">–</div></div>
+        <div class="stat"><div class="lbl">Ø letzte 3</div><div class="val" id="myAvg3">–</div></div>
+        <div class="stat"><div class="lbl">Workouts</div><div class="val" id="myCount">0</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================== VERLAUF ========================== -->
+  <section class="view" id="view-log-list">
+    <div class="card">
+      <div class="card-head">
+        <h2>Verlauf</h2>
+        <div class="seg" id="histFilter">
+          <button data-who="both" class="active">Beide</button>
+          <button data-who="me">Nur ich</button>
+        </div>
+      </div>
+      <div id="histList"></div>
+    </div>
+  </section>
+
+  <!-- ========================== CHARTS ========================== -->
+  <section class="view" id="view-charts">
+    <div class="card">
+      <h2>Runden pro Training</h2>
+      <p class="sub">Beide Verläufe übereinander</p>
+      <div class="chart-box"><canvas id="ch1"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Ø Runden pro Woche</h2>
+      <div class="chart-box"><canvas id="ch2"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Trainings gesamt</h2>
+      <p class="sub">Wer trainiert konsequenter?</p>
+      <div class="chart-box"><canvas id="ch3"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ========================== EINSTELLUNGEN ========================== -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <div class="card-head"><h2>Verbindung</h2><span class="pill" id="connPill">–</span></div>
+      <p class="sub" id="connInfo">–</p>
+      <label class="field"><span>Challenge-Code</span><input type="text" id="setCode" readonly></label>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnCopyCode">Code kopieren</button>
+        <button class="btn ghost sm" id="btnShare">Einladung teilen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Dein Profil</h2>
+      <label class="field"><span>Anzeigename</span><input type="text" id="setName" maxlength="18" placeholder="z. B. Jan"></label>
+      <label class="field"><span>Du bist</span>
+        <select id="setSlot"><option value="a">Athlet A</option><option value="b">Athlet B</option></select></label>
+      <button class="btn ghost sm" id="btnSaveProfile">Profil speichern</button>
+    </div>
+
+    <div class="card">
+      <h2>Daten</h2>
+      <p class="sub">Workouts aus dem lokalen Tracker übernehmen oder alles sichern</p>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnImport">JSON importieren</button>
+        <button class="btn ghost sm" id="btnExport">Export JSON</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/json" hidden>
+      <div class="hr"></div>
+      <button class="btn danger sm" id="btnWipe">Meine Workouts löschen</button>
+    </div>
+
+    <div class="card">
+      <h2>Über</h2>
+      <p class="tiny muted">Duell-Tracker zur Tom Holland Challenge: 20 Min AMRAP mit 5 Pull-Ups,
+      10 Push-Ups und 15 Air Squats pro Runde. Zwei Athleten teilen sich einen Challenge-Code und
+      sehen die Workouts des anderen in Echtzeit.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <div class="tabs-inner">
+    <button class="tab active" data-view="duel"><span class="ic">⚔️</span>Duell</button>
+    <button class="tab" data-view="log"><span class="ic">✏️</span>Erfassen</button>
+    <button class="tab" data-view="log-list"><span class="ic">📋</span>Verlauf</button>
+    <button class="tab" data-view="charts"><span class="ic">📈</span>Charts</button>
+    <button class="tab" data-view="settings"><span class="ic">⚙️</span>Mehr</button>
+  </div>
+</nav>
+
+<!-- Onboarding -->
+<div class="gate" id="gate">
+  <div class="gate-inner">
+    <div class="logo">⚔️</div>
+    <h2>Tom Holland Duell</h2>
+    <p class="lead" id="gateLead">Gib den Challenge-Code ein, den ihr euch teilt – oder starte eine neue Challenge und schick den Code deinem Gegner.</p>
+
+    <label class="field"><span>Challenge-Code</span>
+      <input type="text" id="gateCode" maxlength="10" placeholder="z. B. TH7K2M" autocapitalize="characters" autocomplete="off"></label>
+    <label class="field"><span>Dein Name</span>
+      <input type="text" id="gateName" maxlength="18" placeholder="z. B. Jan" autocomplete="off"></label>
+    <div class="field"><span>Du bist</span>
+      <div class="pick">
+        <button type="button" data-slot="a" id="pickA">Athlet A</button>
+        <button type="button" data-slot="b" id="pickB">Athlet B</button>
+      </div>
+    </div>
+    <button class="btn" id="gateJoin">Challenge beitreten</button>
+    <button class="btn ghost" style="margin-top:8px" id="gateNew">Neue Challenge starten</button>
+    <p class="tiny muted" style="text-align:center;margin-top:14px" id="gateHint"></p>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   FIREBASE-KONFIGURATION
+   ------------------------------------------------------------
+   Die Werte kommen aus der Firebase Console:
+   Projekt-Einstellungen → Allgemein → Meine Apps → Web-App → SDK-Konfiguration.
+   Solange hier die Platzhalter stehen, läuft die Seite im Offline-Modus
+   (Daten nur in diesem Browser) – gut zum Ausprobieren, aber ohne Duell.
+   ============================================================ */
+const FIREBASE_CONFIG = {
+  apiKey:            "DEIN_API_KEY",
+  authDomain:        "DEIN_PROJEKT.firebaseapp.com",
+  projectId:         "DEIN_PROJEKT",
+  storageBucket:     "DEIN_PROJEKT.appspot.com",
+  messagingSenderId: "DEINE_SENDER_ID",
+  appId:             "DEINE_APP_ID"
+};
+const CLOUD_READY = !FIREBASE_CONFIG.apiKey.startsWith("DEIN");
+
+/* ---------- Konstanten & Helfer ---------- */
+const PER_ROUND = { pull:5, push:10, squat:15 };
+const REPS_PER_ROUND = 30;
+const HOLLAND = 27;
+const LS_KEY = "thDuel.v1";
+
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const pad = n => String(n).padStart(2,"0");
+const toStr = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayStr = () => toStr(new Date());
+function fromStr(s){ const [y,m,d] = String(s).split("-").map(Number); return new Date(y, m-1, d); }
+function fmtDate(s){ const d = fromStr(s); return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear(); }
+function weekdayShort(s){ return ["So","Mo","Di","Mi","Do","Fr","Sa"][fromStr(s).getDay()]; }
+function nf(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(".",","); }
+function isoWeekKey(s){
+  const d = fromStr(s); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() + 4 - (t.getDay()||7));
+  const y0 = new Date(t.getFullYear(),0,1);
+  return t.getFullYear()+"-KW"+pad(Math.ceil(((t-y0)/86400000 + 1)/7));
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function newCode(){
+  const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // ohne I/O/0/1 – am Telefon vorlesbar
+  let c = "TH"; for(let i=0;i<4;i++) c += A[(Math.random()*A.length)|0];
+  return c;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---------- lokaler Zustand ---------- */
+let me = { code:"", slot:"a", name:"" };
+let workouts = [];                    // [{id, slot, date, rounds, notes, ts}]
+let names = { a:"Athlet A", b:"Athlet B" };
+let ui = { view:"duel", theme:"dark", duelScope:"all", histWho:"both" };
+let charts = {};
+
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      me = Object.assign(me, d.me || {});
+      ui.theme = d.theme || "dark";
+      if(!CLOUD_READY){ workouts = d.workouts || []; names = d.names || names; }
+    }
+  }catch(e){ /* Speicher gesperrt (privates Fenster) – dann eben ohne */ }
+}
+function saveLocal(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      me, theme:ui.theme,
+      workouts: CLOUD_READY ? [] : workouts,
+      names:    CLOUD_READY ? null : names
+    }));
+  }catch(e){}
+}
+
+/* ============================================================
+   SPEICHER-ADAPTER
+   Zwei Implementierungen mit identischer Schnittstelle:
+   CloudStore (Firestore, live) und LocalStore (nur dieser Browser).
+   ============================================================ */
+let store = null;
+let onData = () => {};
+
+const LocalStore = {
+  kind:"local",
+  async init(){ onData(); return true; },
+  async addWorkout(w){ workouts.push(w); saveLocal(); onData(); },
+  async delWorkout(id){ workouts = workouts.filter(x => x.id !== id); saveLocal(); onData(); },
+  async setName(slot, name){ names[slot] = name; saveLocal(); onData(); },
+  async wipeMine(){ workouts = workouts.filter(w => w.slot !== me.slot); saveLocal(); onData(); }
+};
+
+const CloudStore = {
+  kind:"cloud", fb:null, unsubW:null, unsubM:null,
+  async init(){
+    const [{ initializeApp }, auth, fs] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js")
+    ]);
+    const app = initializeApp(FIREBASE_CONFIG);
+    const a = auth.getAuth(app);
+    await auth.signInAnonymously(a);                 // unsichtbar – nur damit die Regeln greifen
+    const db = fs.getFirestore(app);
+    this.fb = { fs, db, uid:a.currentUser.uid };
+
+    const duelRef = fs.doc(db, "duels", me.code);
+    await fs.setDoc(duelRef, { touched: fs.serverTimestamp() }, { merge:true });
+
+    this.unsubM = fs.onSnapshot(duelRef, snap => {
+      const d = snap.data() || {};
+      names = { a: d.nameA || "Athlet A", b: d.nameB || "Athlet B" };
+      onData();
+    });
+    this.unsubW = fs.onSnapshot(fs.collection(db, "duels", me.code, "workouts"), snap => {
+      workouts = snap.docs.map(x => Object.assign({ id:x.id }, x.data()));
+      onData();
+    });
+    return true;
+  },
+  async addWorkout(w){
+    const { fs, db } = this.fb;
+    await fs.setDoc(fs.doc(db, "duels", me.code, "workouts", w.id), {
+      slot:w.slot, date:w.date, rounds:w.rounds, notes:w.notes, ts:w.ts
+    });
+  },
+  async delWorkout(id){
+    const { fs, db } = this.fb;
+    await fs.deleteDoc(fs.doc(db, "duels", me.code, "workouts", id));
+  },
+  async setName(slot, name){
+    const { fs, db } = this.fb;
+    await fs.setDoc(fs.doc(db, "duels", me.code), { [slot === "a" ? "nameA" : "nameB"]: name }, { merge:true });
+  },
+  async wipeMine(){
+    const { fs, db } = this.fb;
+    const mine = workouts.filter(w => w.slot === me.slot);
+    const batch = fs.writeBatch(db);
+    mine.forEach(w => batch.delete(fs.doc(db, "duels", me.code, "workouts", w.id)));
+    await batch.commit();
+  }
+};
+
+/* ============================================================
+   AUSWERTUNG
+   ============================================================ */
+function bySlot(slot, scope){
+  let list = workouts.filter(w => w.slot === slot);
+  if(scope === "30"){
+    const limit = toStr(new Date(Date.now() - 30*86400000));
+    list = list.filter(w => w.date >= limit);
+  }
+  return list.sort((x,y) => x.date.localeCompare(y.date) || (x.ts||0) - (y.ts||0));
+}
+function summary(slot, scope){
+  const l = bySlot(slot, scope);
+  const rounds = l.map(w => +w.rounds || 0);
+  const best = rounds.length ? Math.max(...rounds) : 0;
+  const avg  = rounds.length ? rounds.reduce((a,b) => a+b, 0)/rounds.length : 0;
+  const last3 = rounds.slice(-3);
+  return {
+    list:l, n:l.length, best, avg,
+    avg3: last3.length ? last3.reduce((a,b) => a+b, 0)/last3.length : 0,
+    reps: rounds.reduce((a,b) => a+b, 0) * REPS_PER_ROUND,
+    last: l.length ? l[l.length-1] : null
+  };
+}
+/** Trainings-Serie in Wochen: wie viele Wochen in Folge mind. 1 Workout */
+function weekStreak(slot){
+  const keys = new Set(bySlot(slot,"all").map(w => isoWeekKey(w.date)));
+  let n = 0, d = new Date();
+  for(;;){
+    if(keys.has(isoWeekKey(toStr(d)))) n++;
+    else if(n > 0 || keys.size === 0) break;
+    else if(n === 0 && d < new Date(Date.now() - 8*86400000)) break;
+    d.setDate(d.getDate() - 7);
+  }
+  return n;
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+function renderAll(){
+  const other = me.slot === "a" ? "b" : "a";
+  $("#vsNameA").textContent = names[me.slot];
+  $("#vsNameB").textContent = names[other];
+  $("#thA").textContent = names[me.slot];
+  $("#thB").textContent = names[other];
+  $("#thaName").textContent = names[me.slot];
+  $("#thbName").textContent = names[other];
+
+  renderVersus(me.slot, other);
+  renderDuelTable(me.slot, other);
+  renderHolland(me.slot, other);
+  renderRecent();
+  renderHistory();
+  renderMyForm();
+  if(ui.view === "charts") renderCharts();
+}
+
+function renderVersus(A, B){
+  const a = summary(A, "all"), b = summary(B, "all");
+  $("#vsScoreA").textContent = a.n ? nf(a.best) : "–";
+  $("#vsScoreB").textContent = b.n ? nf(b.best) : "–";
+  $("#vsLegA").textContent = a.n ? a.n + " Workouts" : "noch keins";
+  $("#vsLegB").textContent = b.n ? b.n + " Workouts" : "noch keins";
+
+  const sum = a.best + b.best;
+  const pa = sum > 0 ? (a.best/sum*100) : 50;
+  $("#vsBarA").style.width = pa + "%";
+  $("#vsBarB").style.width = (100-pa) + "%";
+
+  const diff = +(a.best - b.best).toFixed(1);
+  let msg;
+  if(!a.n && !b.n)      msg = "Noch keine Workouts – tragt euer erstes Training ein.";
+  else if(!b.n)         msg = names[B] + " hat noch nicht vorgelegt. Dein Vorsprung: " + nf(a.best) + " Runden.";
+  else if(!a.n)         msg = names[B] + " führt mit " + nf(b.best) + " Runden. Zeit für dein erstes Workout.";
+  else if(diff > 0)     msg = "🔥 Du führst mit " + nf(Math.abs(diff)) + " " + (Math.abs(diff) === 1 ? "Runde" : "Runden") + " Vorsprung.";
+  else if(diff < 0)     msg = "😤 " + names[B] + " führt mit " + nf(Math.abs(diff)) + " " + (Math.abs(diff) === 1 ? "Runde" : "Runden") + ". Aufholen!";
+  else                  msg = "🤝 Gleichstand bei " + nf(a.best) + " Runden. Das nächste Workout entscheidet.";
+  $("#vsLead").textContent = msg;
+}
+
+function renderDuelTable(A, B){
+  const sc = ui.duelScope;
+  const a = summary(A, sc), b = summary(B, sc);
+  const rows = [
+    ["Bestleistung", a.best, b.best, "runden"],
+    ["Ø Runden",     a.avg,  b.avg,  "runden"],
+    ["Ø letzte 3",   a.avg3, b.avg3, "runden"],
+    ["Workouts",     a.n,    b.n,    "zahl"],
+    ["Wiederholungen", a.reps, b.reps, "zahl"],
+    ["Wochen-Serie", weekStreak(A), weekStreak(B), "zahl"]
+  ];
+  $("#duelBody").innerHTML = rows.map(([label, va, vb, kind]) => {
+    const fa = kind === "zahl" ? String(Math.round(va)) : (va ? nf(+va.toFixed(1)) : "–");
+    const fb = kind === "zahl" ? String(Math.round(vb)) : (vb ? nf(+vb.toFixed(1)) : "–");
+    const wa = va > vb ? " class=\"win\"" : "", wb = vb > va ? " class=\"win\"" : "";
+    return "<tr><td>"+label+"</td><td"+wa+">"+fa+"</td><td"+wb+">"+fb+"</td></tr>";
+  }).join("");
+}
+
+function renderHolland(A, B){
+  const a = summary(A,"all").best, b = summary(B,"all").best;
+  const pa = Math.min(100, a/HOLLAND*100), pb = Math.min(100, b/HOLLAND*100);
+  $("#thaBarA").style.width = pa + "%";
+  $("#thaBarB").style.width = pb + "%";
+  $("#thaPctA").textContent = Math.round(pa) + " %";
+  $("#thaPctB").textContent = Math.round(pb) + " %";
+}
+
+function entryHtml(w, isPr){
+  const mine = w.slot === me.slot;
+  return '<div class="entry ' + (mine ? "me" : "rival") + '">' +
+    '<div class="val" style="color:var(--' + (mine ? "accent" : "rival") + ')">' + nf(+w.rounds) + '</div>' +
+    '<div class="meta"><b>' + esc(names[w.slot]) + (isPr ? ' <span class="pr">🏅</span>' : '') + '</b>' +
+    '<small>' + weekdayShort(w.date) + ', ' + fmtDate(w.date) +
+    (w.notes ? ' · ' + esc(w.notes) : '') + '</small></div>' +
+    (mine ? '<button class="del" data-del="' + w.id + '" title="Löschen">✕</button>' : '') +
+    '</div>';
+}
+
+function renderRecent(){
+  const all = workouts.slice().sort((x,y) =>
+    y.date.localeCompare(x.date) || (y.ts||0) - (x.ts||0)).slice(0,6);
+  $("#recentList").innerHTML = all.length
+    ? all.map(w => entryHtml(w, isPr(w))).join("")
+    : '<div class="empty">Noch keine Workouts erfasst.</div>';
+  bindDelete("#recentList");
+}
+
+function isPr(w){
+  const others = workouts.filter(x => x.slot === w.slot && x.id !== w.id);
+  return others.length > 0 && +w.rounds > Math.max(...others.map(x => +x.rounds));
+}
+
+function renderHistory(){
+  let list = workouts.slice();
+  if(ui.histWho === "me") list = list.filter(w => w.slot === me.slot);
+  list.sort((x,y) => y.date.localeCompare(x.date) || (y.ts||0) - (x.ts||0));
+  $("#histList").innerHTML = list.length
+    ? list.map(w => entryHtml(w, isPr(w))).join("")
+    : '<div class="empty">Keine Einträge.</div>';
+  bindDelete("#histList");
+}
+
+function bindDelete(sel){
+  $$(sel + " [data-del]").forEach(b => b.addEventListener("click", () => {
+    const w = workouts.find(x => x.id === b.dataset.del);
+    if(!w) return;
+    confirmModal("Workout löschen?", nf(+w.rounds) + " Runden vom " + fmtDate(w.date) + " werden entfernt.",
+      async () => { await store.delWorkout(w.id); toast("Workout gelöscht"); });
+  }));
+}
+
+function renderMyForm(){
+  const s = summary(me.slot, "all");
+  $("#myBest").textContent  = s.n ? nf(s.best) : "–";
+  $("#myAvg3").textContent  = s.n ? nf(+s.avg3.toFixed(1)) : "–";
+  $("#myCount").textContent = s.n;
+}
+
+/* ---------- Charts ---------- */
+function destroy(k){ if(charts[k]){ charts[k].destroy(); charts[k] = null; } }
+function chartBase(){
+  const css = getComputedStyle(document.documentElement);
+  const grid = css.getPropertyValue("--line").trim();
+  const muted = css.getPropertyValue("--muted").trim();
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:muted, font:{ weight:700, size:11 }, boxWidth:12, boxHeight:12 } } },
+    scales:{
+      x:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } } },
+      y:{ grid:{ color:grid }, ticks:{ color:muted, font:{ size:10 } }, beginAtZero:true }
+    }
+  };
+}
+function renderCharts(){
+  if(typeof Chart === "undefined"){
+    $$(".chart-box").forEach(b => b.innerHTML =
+      '<div class="empty">Grafiken brauchen eine Internetverbindung.</div>');
+    return;
+  }
+  const css = getComputedStyle(document.documentElement);
+  const cA = css.getPropertyValue("--accent").trim(), cB = css.getPropertyValue("--rival").trim();
+  const other = me.slot === "a" ? "b" : "a";
+  const base = chartBase();
+
+  // 1. Runden pro Training – gemeinsame Datums-Achse
+  const dates = [...new Set(workouts.map(w => w.date))].sort();
+  const series = slot => dates.map(d => {
+    const hit = workouts.filter(w => w.slot === slot && w.date === d);
+    return hit.length ? Math.max(...hit.map(w => +w.rounds)) : null;
+  });
+  destroy("ch1");
+  charts.ch1 = new Chart($("#ch1"), {
+    type:"line",
+    data:{ labels:dates.map(d => fmtDate(d).slice(0,6)), datasets:[
+      { label:names[me.slot], data:series(me.slot), borderColor:cA, backgroundColor:cA+"33",
+        tension:.32, spanGaps:true, pointRadius:4, borderWidth:3, fill:true },
+      { label:names[other], data:series(other), borderColor:cB, backgroundColor:cB+"22",
+        tension:.32, spanGaps:true, pointRadius:4, borderWidth:3, fill:true }
+    ]},
+    options:base
+  });
+
+  // 2. Ø Runden pro Woche
+  const weeks = [...new Set(workouts.map(w => isoWeekKey(w.date)))].sort();
+  const weekAvg = slot => weeks.map(k => {
+    const l = workouts.filter(w => w.slot === slot && isoWeekKey(w.date) === k).map(w => +w.rounds);
+    return l.length ? +(l.reduce((a,b) => a+b,0)/l.length).toFixed(1) : null;
+  });
+  destroy("ch2");
+  charts.ch2 = new Chart($("#ch2"), {
+    type:"bar",
+    data:{ labels:weeks.map(k => k.split("-")[1]), datasets:[
+      { label:names[me.slot], data:weekAvg(me.slot), backgroundColor:cA+"CC", borderRadius:7 },
+      { label:names[other],   data:weekAvg(other),   backgroundColor:cB+"CC", borderRadius:7 }
+    ]},
+    options:base
+  });
+
+  // 3. Trainings gesamt (kumuliert)
+  const cum = slot => { let n = 0; return dates.map(d =>
+    n += workouts.filter(w => w.slot === slot && w.date === d).length); };
+  destroy("ch3");
+  charts.ch3 = new Chart($("#ch3"), {
+    type:"line",
+    data:{ labels:dates.map(d => fmtDate(d).slice(0,6)), datasets:[
+      { label:names[me.slot], data:cum(me.slot), borderColor:cA, tension:.25, pointRadius:0, borderWidth:3 },
+      { label:names[other],   data:cum(other),   borderColor:cB, tension:.25, pointRadius:0, borderWidth:3 }
+    ]},
+    options:base
+  });
+}
+
+/* ============================================================
+   AKTIONEN
+   ============================================================ */
+async function addWorkout(date, rounds, notes){
+  const w = { id:uid(), slot:me.slot, date, rounds:+rounds, notes:notes||"", ts:Date.now() };
+  const prevBest = summary(me.slot,"all").best;
+  await store.addWorkout(w);
+  if(+rounds > prevBest && prevBest > 0) toast("🏅 Neue Bestleistung: " + nf(+rounds) + " Runden!", true);
+  else toast("Workout gespeichert");
+
+  const other = me.slot === "a" ? "b" : "a";
+  const ob = summary(other,"all").best;
+  if(ob > 0 && +rounds > ob && prevBest <= ob) toast("⚔️ Du hast " + names[other] + " überholt!", true);
+}
+
+function updateCalc(){
+  const r = parseFloat($("#inRounds").value) || 0;
+  $("#cPull").textContent  = nf(r*PER_ROUND.pull);
+  $("#cPush").textContent  = nf(r*PER_ROUND.push);
+  $("#cSquat").textContent = nf(r*PER_ROUND.squat);
+}
+
+/** Import des JSON-Exports aus dem lokalen Tracker */
+async function importJson(text){
+  let data;
+  try{ data = JSON.parse(text); }
+  catch(e){ toast("Datei ist kein gültiges JSON"); return; }
+  const raw = Array.isArray(data) ? data
+            : Array.isArray(data.workouts) ? data.workouts
+            : Array.isArray(data.seasons) ? data.seasons.flatMap(s => s.workouts || []) : null;
+  if(!raw){ toast("Keine Workouts in der Datei gefunden"); return; }
+
+  const have = new Set(workouts.filter(w => w.slot === me.slot).map(w => w.date + "|" + w.rounds));
+  const fresh = raw
+    .filter(w => w && w.date && w.rounds != null)
+    .filter(w => !have.has(w.date + "|" + (+w.rounds)))
+    .map(w => ({ id:uid(), slot:me.slot, date:String(w.date).slice(0,10),
+                 rounds:+w.rounds, notes:(w.notes||"").slice(0,300), ts:Date.parse(w.date)||Date.now() }));
+
+  if(!fresh.length){ toast("Alle Workouts waren schon vorhanden"); return; }
+  for(const w of fresh) await store.addWorkout(w);
+  toast(fresh.length + " Workouts importiert", true);
+}
+
+function exportJson(){
+  const blob = new Blob([JSON.stringify({
+    code:me.code, names, exported:new Date().toISOString(), workouts
+  }, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "th-duell_" + todayStr() + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- UI-Helfer ---------- */
+function switchView(v){
+  ui.view = v;
+  $$(".view").forEach(s => s.classList.toggle("active", s.id === "view-" + v));
+  $$(".tab").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  window.scrollTo({ top:0, behavior:"smooth" });
+  if(v === "charts") renderCharts();
+}
+function applyTheme(){
+  document.documentElement.dataset.theme = ui.theme;
+  $("#themeBtn").textContent = ui.theme === "dark" ? "🌙" : "☀️";
+  document.querySelector('meta[name=theme-color]').content = ui.theme === "dark" ? "#0B0D10" : "#F5F7FA";
+  if(ui.view === "charts") renderCharts();
+}
+function toast(msg, gold){
+  const el = document.createElement("div");
+  el.className = "toast" + (gold ? " gold" : "");
+  el.textContent = msg;
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 2600);
+  setTimeout(() => el.remove(), 3000);
+}
+function openModal(html, after){
+  $("#modal").innerHTML = html;
+  $("#modalBg").classList.add("open");
+  if(after) after();
+}
+function closeModal(){ $("#modalBg").classList.remove("open"); }
+function confirmModal(title, text, onYes){
+  openModal('<h3>' + esc(title) + '</h3><p class="muted tiny" style="margin:0 0 16px">' + esc(text) + '</p>' +
+    '<button class="btn danger" id="cYes">Ja, löschen</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="cNo">Abbrechen</button>',
+    () => {
+      $("#cYes").addEventListener("click", async () => { closeModal(); await onYes(); });
+      $("#cNo").addEventListener("click", closeModal);
+    });
+}
+
+/* ============================================================
+   VERBINDEN & START
+   ============================================================ */
+function setConnUi(){
+  const cloud = store && store.kind === "cloud";
+  $("#headSub").textContent = me.code
+    ? (cloud ? "Code " + me.code + " · live" : "Code " + me.code + " · offline")
+    : "Nicht verbunden";
+  const p = $("#connPill");
+  p.textContent = cloud ? "Firebase verbunden" : "Offline-Modus";
+  p.className = "pill " + (cloud ? "on" : "warn");
+  $("#connInfo").textContent = cloud
+    ? "Eure Workouts werden live über Firestore geteilt. Neue Einträge des anderen erscheinen ohne Neuladen."
+    : "Noch keine Firebase-Konfiguration hinterlegt – die Daten bleiben nur in diesem Browser. Trag die Config im Kopf der index.html ein, damit das Duell funktioniert.";
+  $("#setCode").value = me.code;
+  $("#liveP").textContent = cloud ? "live" : "lokal";
+  $("#liveP").className = "pill " + (cloud ? "on" : "warn");
+}
+
+async function connect(){
+  store = CLOUD_READY ? CloudStore : LocalStore;
+  onData = () => { renderAll(); setConnUi(); };
+  try{
+    await store.init();
+  }catch(e){
+    console.error(e);
+    store = LocalStore;
+    await store.init();
+    toast("Firebase nicht erreichbar – Offline-Modus");
+  }
+  setConnUi();
+  renderAll();
+}
+
+function showGate(show){ $("#gate").style.display = show ? "grid" : "none"; }
+
+function initGate(){
+  let slot = me.slot || "a";
+  const paint = () => {
+    $("#pickA").classList.toggle("sel", slot === "a");
+    $("#pickB").classList.toggle("sel", slot === "b");
+  };
+  $$(".pick button").forEach(b => b.addEventListener("click", () => { slot = b.dataset.slot; paint(); }));
+  paint();
+
+  // Code aus dem Link übernehmen: ...index.html#TH7K2M
+  const fromHash = location.hash.replace("#","").trim().toUpperCase();
+  if(fromHash) $("#gateCode").value = fromHash;
+
+  $("#gateNew").addEventListener("click", () => {
+    $("#gateCode").value = newCode();
+    $("#gateHint").textContent = "Neuer Code erzeugt – schick ihn deinem Gegner, damit er beitreten kann.";
+  });
+
+  $("#gateJoin").addEventListener("click", async () => {
+    const code = $("#gateCode").value.trim().toUpperCase();
+    const name = $("#gateName").value.trim();
+    if(code.length < 4){ $("#gateHint").textContent = "Bitte einen Code mit mindestens 4 Zeichen eingeben."; return; }
+    if(!name){ $("#gateHint").textContent = "Bitte deinen Namen eingeben."; return; }
+    me = { code, slot, name };
+    saveLocal();
+    $("#gateJoin").disabled = true;
+    $("#gateHint").textContent = "Verbinde …";
+    showGate(false);
+    await connect();
+    await store.setName(slot, name);
+    $("#gateJoin").disabled = false;
+  });
+}
+
+function bindUi(){
+  $$(".tab").forEach(b => b.addEventListener("click", () => switchView(b.dataset.view)));
+  $("#themeBtn").addEventListener("click", () => {
+    ui.theme = ui.theme === "dark" ? "light" : "dark"; applyTheme(); saveLocal();
+  });
+
+  $("#inRounds").addEventListener("input", updateCalc);
+  $("#saveWorkout").addEventListener("click", async () => {
+    const d = $("#inDate").value || todayStr();
+    const r = parseFloat($("#inRounds").value);
+    if(isNaN(r) || r < 0 || r > 80){ toast("Bitte eine Rundenzahl zwischen 0 und 80 eingeben"); return; }
+    await addWorkout(d, r, $("#inNotes").value.trim());
+    $("#inRounds").value = ""; $("#inNotes").value = ""; updateCalc();
+    switchView("duel");
+  });
+
+  $$("#duelScope button").forEach(b => b.addEventListener("click", () => {
+    ui.duelScope = b.dataset.scope;
+    $$("#duelScope button").forEach(x => x.classList.toggle("active", x === b));
+    renderDuelTable(me.slot, me.slot === "a" ? "b" : "a");
+  }));
+  $$("#histFilter button").forEach(b => b.addEventListener("click", () => {
+    ui.histWho = b.dataset.who;
+    $$("#histFilter button").forEach(x => x.classList.toggle("active", x === b));
+    renderHistory();
+  }));
+
+  $("#btnCopyCode").addEventListener("click", async () => {
+    try{ await navigator.clipboard.writeText(me.code); toast("Code kopiert"); }
+    catch(e){ toast("Code: " + me.code); }
+  });
+  $("#btnShare").addEventListener("click", async () => {
+    const url = location.origin + location.pathname + "#" + me.code;
+    const text = "Tom Holland Challenge – tritt meinem Duell bei. Code: " + me.code + "\n" + url;
+    if(navigator.share){ try{ await navigator.share({ title:"Tom Holland Duell", text, url }); return; }catch(e){} }
+    try{ await navigator.clipboard.writeText(text); toast("Einladung kopiert"); }
+    catch(e){ openModal('<h3>Einladung</h3><div class="code-box">' + esc(me.code) + '</div>' +
+      '<p class="tiny muted" style="margin:12px 0 14px;word-break:break-all">' + esc(url) + '</p>' +
+      '<button class="btn ghost" id="cl">Schliessen</button>',
+      () => $("#cl").addEventListener("click", closeModal)); }
+  });
+
+  $("#btnSaveProfile").addEventListener("click", async () => {
+    const n = $("#setName").value.trim();
+    if(!n){ toast("Bitte einen Namen eingeben"); return; }
+    const newSlot = $("#setSlot").value;
+    me.name = n; me.slot = newSlot; saveLocal();
+    await store.setName(newSlot, n);
+    toast("Profil gespeichert");
+    renderAll();
+  });
+
+  $("#btnImport").addEventListener("click", () => $("#fileInput").click());
+  $("#fileInput").addEventListener("change", e => {
+    const f = e.target.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = () => importJson(rd.result);
+    rd.readAsText(f);
+    e.target.value = "";
+  });
+  $("#btnExport").addEventListener("click", exportJson);
+  $("#btnWipe").addEventListener("click", () => {
+    const n = summary(me.slot,"all").n;
+    if(!n){ toast("Du hast noch keine Workouts"); return; }
+    confirmModal("Alle deine Workouts löschen?",
+      n + " Einträge werden entfernt. Die Workouts deines Gegners bleiben bestehen.",
+      async () => { await store.wipeMine(); toast("Deine Workouts wurden gelöscht"); });
+  });
+
+  $("#modalBg").addEventListener("click", e => { if(e.target.id === "modalBg") closeModal(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+}
+
+async function init(){
+  loadLocal();
+  applyTheme();
+  $("#inDate").value = todayStr();
+  bindUi();
+  initGate();
+  updateCalc();
+
+  if(me.code){
+    $("#setName").value = me.name;
+    $("#setSlot").value = me.slot;
+    showGate(false);
+    await connect();
+  }else{
+    showGate(true);
+    setConnUi();
+  }
+}
+init();
+</script>
+</body>
+</html>
