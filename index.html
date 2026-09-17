@@ -404,8 +404,8 @@ html[data-theme="light"] .versus{
 .pick button.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}
 .pick button small{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pick button.taken{opacity:.55}
-.pick button.taken.sel{opacity:1}
+.pick button:disabled{opacity:.4;cursor:not-allowed}
+.pick button.own small{color:var(--mint)}
 
 /* Aufwärm-Modul */
 .warm-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -1874,8 +1874,10 @@ function bindGate(){
    ============================================================ */
 let rivals = {};           // slot -> { name, workouts:[…], updated } aller anderen Athleten
 let duelConn = { on:false, fb:null, unsub:null };
-let duelPick = 'a';
+let duelPick = null;
 let pickOcc = {};          // zuletzt gesehene Slot-Belegung im Setup
+let pickReady = false;     // erst nach dem Nachschauen dürfen Plätze gewählt werden
+let pickCode = '';         // Code, zu dem pickOcc gehört
 
 const HOLLAND = 27;
 const SLOTS = ['a','b','c','d'];   // muss zu firestore.rules passen
@@ -2037,10 +2039,10 @@ function renderDuel(){
   const setup = $('#duelSetup'), live = $('#duelLive');
   if(!state.duel){
     setup.style.display = ''; live.style.display = 'none';
-    if(!Object.keys(pickOcc).length) $('#dHint').textContent = CLOUD_READY
-      ? 'Deine ' + state.workouts.length + ' bisherigen Workouts werden automatisch mitgenommen.'
+    if(!pickReady) $('#dHint').textContent = CLOUD_READY
+      ? 'Gib zuerst den Challenge-Code ein – danach siehst du die freien Plätze.'
       : '⚠️ Noch keine Firebase-Konfiguration hinterlegt – bis dahin lässt sich kein Duell starten (siehe README).';
-    $('#dJoin').disabled = !CLOUD_READY;
+    updateJoinBtn();
     return;
   }
   setup.style.display = 'none'; live.style.display = '';
@@ -2186,26 +2188,41 @@ function renderDuelChart(people){
 async function duelJoin(){
   const code = $('#dCode').value.trim().toUpperCase();
   const name = $('#dName').value.trim();
-  if(code.length < 4){ $('#dHint').textContent = 'Bitte einen Code mit mindestens 4 Zeichen eingeben.'; return; }
+  if(code.length < 4){ $('#dHint').textContent = 'Bitte zuerst den Challenge-Code eingeben.'; return; }
+  if(!pickReady || pickCode !== code){ $('#dHint').textContent = 'Einen Moment – die freien Plätze werden noch geladen.'; probePick(); return; }
   if(!name){ $('#dHint').textContent = 'Bitte deinen Namen eingeben.'; return; }
+  if(!duelPick){ $('#dHint').textContent = 'Bitte einen freien Athleten-Platz wählen.'; return; }
   $('#dJoin').disabled = true;
   $('#dHint').textContent = 'Verbinde …';
-  // Belegten Slot nur übernehmen, wenn es derselbe Name ist (= dein zweites Gerät)
+  const slot = duelPick;
+  // Platz in einer Transaktion belegen: treten zwei gleichzeitig bei,
+  // bekommt nur einer den Platz, der andere eine klare Meldung.
   try{
-    const chosen = duelPick;
-    const occ = await duelOccupancy(code);
-    renderPick(occ);                       // springt ggf. auf einen freien Platz
-    const holder = occ[chosen];
-    if(holder && holder.toLowerCase() !== name.toLowerCase()){
-      const free = SLOTS.find(k => !occ[k]);
-      $('#dHint').textContent = 'Athlet ' + chosen.toUpperCase() + ' ist schon ' + holder + '. ' +
-        (free ? 'Athlet ' + free.toUpperCase() + ' ist frei und jetzt ausgewählt.' : 'Dieses Duell ist voll.') +
-        ' Gleicher Name = dein zweites Gerät.';
-      $('#dJoin').disabled = false;
-      return;
+    const { fs, db } = await firebaseReady();
+    const ref = fs.doc(db, 'duels', code, 'athletes', slot);
+    await fs.runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if(snap.exists()){
+        const holder = (snap.data().name || '').trim();
+        if(holder.toLowerCase() !== name.toLowerCase()) throw { taken: holder || '?' };
+        return;                                   // eigener Platz, zweites Gerät
+      }
+      tx.set(ref, { name, workouts: myPayload(), removed: state.duelRemoved.slice(-200), updated: Date.now() });
+    });
+  }catch(e){
+    if(e && e.taken){
+      await probePick(true);
+      $('#dHint').textContent = 'Athlet ' + slot.toUpperCase() + ' hat sich gerade ' + e.taken + ' geschnappt. ' +
+        (duelPick ? 'Athlet ' + duelPick.toUpperCase() + ' ist frei und jetzt ausgewählt – nochmals auf „Duell beitreten“ tippen.' : 'Leider sind alle Plätze vergeben.');
+    }else{
+      console.error('[Duell beitreten]', e);
+      $('#dHint').textContent = 'Verbindung fehlgeschlagen. Bitte nochmals versuchen.';
+      toast('Firebase nicht erreichbar');
     }
-  }catch(e){ console.error('[Duell prüfen]', e); }
-  state.duel = { code, slot:duelPick, name };
+    updateJoinBtn();
+    return;
+  }
+  state.duel = { code, slot, name };
   save();
   try{
     await duelConnect();
@@ -2216,7 +2233,7 @@ async function duelJoin(){
     $('#dHint').textContent = 'Verbindung fehlgeschlagen. Stimmt die Firebase-Konfiguration?';
     toast('Firebase nicht erreichbar');
   }
-  $('#dJoin').disabled = false;
+  updateJoinBtn();
   renderDuel();
 }
 
@@ -2230,6 +2247,7 @@ function duelLeave(){
       $('#okLv').addEventListener('click', () => {
         if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
         duelConn.on = false; rivals = {}; state.duel = null; save();
+        pickReady = false; pickOcc = {}; duelPick = null; probePick();
         closeModal(); renderDuel(); toast('Duell verlassen');
       });
       $('#noLv').addEventListener('click', closeModal);
@@ -2255,20 +2273,23 @@ async function duelShare(){
 
 function bindDuel(){
   $$('#dPick button').forEach(b => b.addEventListener('click', () => {
+    if(b.disabled) return;
     duelPick = b.dataset.slot;
-    $$('#dPick button').forEach(x => x.classList.toggle('sel', x === b));
+    renderPick();
   }));
-  renderPick({});
-  // Sobald ein Code dasteht: nachsehen, welche Plätze schon vergeben sind
+  renderPick();
+  // Erst der Code, dann die Plätze: bei jeder Änderung sperren und neu nachsehen
   let probeT = null;
   $('#dCode').addEventListener('input', () => {
+    pickReady = false; pickOcc = {}; renderPick();
     clearTimeout(probeT);
     probeT = setTimeout(probePick, 450);
   });
-  $('#dNew').addEventListener('click', () => {
+  $('#dName').addEventListener('input', () => renderPick());
+  $('#dNew').addEventListener('click', async () => {
     $('#dCode').value = newCode();
-    renderPick({});
-    $('#dHint').textContent = 'Neuer Code erzeugt – schick ihn deinem Gegner, damit er beitreten kann.';
+    await probePick();
+    $('#dHint').textContent = 'Neuer Code erzeugt – Platz wählen, beitreten und den Code deinen Kumpels schicken.';
   });
   $('#dJoin').addEventListener('click', duelJoin);
   $('#dShare').addEventListener('click', duelShare);
@@ -2284,32 +2305,50 @@ function bindDuel(){
   if(state.account && !$('#dName').value) $('#dName').value = state.account.name;
 }
 
-/** Slot-Knöpfe beschriften; wählt den ersten freien, falls der gewählte belegt ist */
-function renderPick(occ){
-  pickOcc = occ;
+/** Slot-Knöpfe: gesperrt bis zum Code, danach nur freie (oder der eigene) wählbar */
+function renderPick(){
+  const occ = pickOcc;
   const name = ($('#dName').value || '').trim().toLowerCase();
-  const mineOrFree = k => !occ[k] || occ[k].toLowerCase() === name;
-  if(!mineOrFree(duelPick)) duelPick = SLOTS.find(k => occ[k] && occ[k].toLowerCase() === name) || SLOTS.find(k => !occ[k]) || duelPick;
+  const own  = k => !!occ[k] && !!name && occ[k].toLowerCase() === name;
+  const ok   = k => pickReady && (!occ[k] || own(k));
+  if(!duelPick || !ok(duelPick)){
+    duelPick = pickReady ? (SLOTS.find(own) || SLOTS.find(k => !occ[k]) || null) : null;
+  }
   $$('#dPick button').forEach(b => {
     const k = b.dataset.slot;
-    b.querySelector('small').textContent = occ[k] ? 'belegt: ' + occ[k] : (Object.keys(occ).length ? 'frei' : '–');
-    b.classList.toggle('taken', !!occ[k]);
+    b.disabled = !ok(k);
+    b.classList.toggle('own', own(k));
     b.classList.toggle('sel', k === duelPick);
+    b.querySelector('small').textContent = !pickReady ? 'zuerst Code eingeben'
+      : own(k) ? 'dein Platz' : occ[k] ? 'belegt: ' + occ[k] : 'frei';
   });
+  updateJoinBtn();
 }
-async function probePick(){
+function updateJoinBtn(){
+  $('#dJoin').disabled = !CLOUD_READY || !pickReady || !duelPick;
+}
+async function probePick(keepHint){
   const code = $('#dCode').value.trim().toUpperCase();
-  if(!CLOUD_READY || state.duel || code.length < 4){ renderPick({}); return; }
+  if(!CLOUD_READY || state.duel || code.length < 4){
+    pickReady = false; pickOcc = {}; renderPick();
+    if(!state.duel && CLOUD_READY) $('#dHint').textContent = 'Gib zuerst den Challenge-Code ein – danach siehst du die freien Plätze.';
+    return;
+  }
   try{
     const occ = await duelOccupancy(code);
     if($('#dCode').value.trim().toUpperCase() !== code) return;   // inzwischen weitergetippt
-    renderPick(occ);
+    pickOcc = occ; pickCode = code; pickReady = true;
+    renderPick();
+    if(keepHint) return;
     const n = Object.keys(occ).length;
     $('#dHint').textContent = n
       ? 'Duell ' + code + ': ' + Object.values(occ).join(', ') + ' ' + (n === 1 ? 'ist' : 'sind') + ' schon dabei. ' +
-        (n < SLOTS.length ? 'Ein freier Platz ist vorausgewählt.' : 'Alle Plätze sind vergeben.')
+        (n < SLOTS.length ? 'Wähl einen freien Platz.' : 'Alle Plätze sind vergeben.')
       : 'Neues Duell – noch niemand dabei. Deine ' + state.workouts.length + ' bisherigen Workouts werden mitgenommen.';
-  }catch(e){ console.error('[Duell prüfen]', e); }
+  }catch(e){
+    console.error('[Duell prüfen]', e);
+    $('#dHint').textContent = 'Plätze konnten nicht geladen werden. Internet prüfen und den Code nochmals eingeben.';
+  }
 }
 
 /* ---------- 5. Timer ---------- */

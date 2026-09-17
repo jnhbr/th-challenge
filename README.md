@@ -41,9 +41,11 @@ Im Tab **⚔️ Duell**: *Neuen Code erzeugen* → Athlet A wählen → beitrete
 Kumpels schicken; bis zu vier Athleten (A–D) passen in ein Duell. Die bisherigen Workouts
 werden automatisch mitgenommen.
 
-Sobald ein Code im Feld steht, zeigt die Seite, welche Plätze schon vergeben sind, und wählt
-den ersten freien vor. Einen belegten Platz kann nur übernehmen, wer denselben Namen eingibt
-(= zweites Gerät derselben Person).
+Die Athleten-Plätze sind gesperrt, bis ein Code eingegeben ist. Danach zeigt die Seite, welche
+Plätze schon vergeben sind; wählbar sind nur freie – oder der eigene, wenn derselbe Name
+eingegeben wird (= zweites Gerät derselben Person). Beim Beitreten wird der Platz in einer
+Firestore-Transaktion geprüft und belegt: treten zwei Personen gleichzeitig auf denselben Platz
+bei, bekommt ihn nur eine, die andere erhält eine Meldung und einen freien Platz vorgeschlagen.
 
 Bei zwei Athleten erscheint oben das klassische VS, ab drei eine Rangliste nach Bestleistung.
 Direktvergleich, Weg zu Tom Holland, Verlauf und letzte Workouts zeigen alle Teilnehmer.
@@ -88,7 +90,7 @@ Workouts, die zu einer auf dem anderen Gerät unbekannten Season gehören, lande
 aktuellen Season.
 
 Wichtig: Zwei verschiedene Personen im selben Slot würden sich gegenseitig überschreiben.
-Die Seite verhindert das beim Beitreten über den Namen.
+Die Seite verhindert das beim Beitreten (siehe oben).
 
 ## Datenmodell
 
