@@ -367,6 +367,18 @@ html[data-theme="light"] .versus{
 .duel-entry .m b{font-size:13.5px;display:block}
 .duel-entry .m small{color:var(--muted);font-size:11.5px;display:block;margin-top:1px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Rangliste ab drei Athleten */
+.rank-title{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  text-align:center;margin-bottom:10px}
+.rank-row{display:grid;grid-template-columns:22px minmax(0,1fr) 44px;align-items:center;gap:10px;padding:7px 0}
+.rank-row .rk{font-size:15px;font-weight:900;color:var(--muted);text-align:center}
+.rank-row .nm{font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-row .nm small{font-weight:600;color:var(--muted);font-size:11px;margin-left:4px}
+.rank-row .sc{font-size:22px;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
+.rank-row .track{grid-column:2 / 4;height:8px;border-radius:99px;background:var(--surface-2);
+  border:1px solid var(--line);overflow:hidden;margin-top:-3px}
+.rank-row .track i{display:block;height:100%;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.duel-scroll{overflow-x:auto;margin:0 -4px}
 .code-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:800;
   letter-spacing:.2em;text-align:center;background:var(--surface-2);border:1px dashed var(--line);
   border-radius:13px;padding:14px;margin-bottom:12px}
@@ -390,7 +402,10 @@ html[data-theme="light"] .versus{
 .pick button{padding:14px 10px;border-radius:14px;background:var(--surface-2);border:2px solid var(--line);
   font-weight:800;font-size:14.5px;color:var(--text)}
 .pick button.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--surface-2))}
-.pick button:nth-child(2).sel{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--surface-2))}
+.pick button small{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick button.taken{opacity:.55}
+.pick button.taken.sel{opacity:1}
 
 /* Aufwärm-Modul */
 .warm-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -715,13 +730,16 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
     <!-- Nicht verbunden: Einrichtung -->
     <div class="card" id="duelSetup">
       <h2>Duell starten</h2>
-      <p class="sub">Vergleich dich live mit einem Kumpel – ihr teilt euch einen Challenge-Code</p>
+      <p class="sub">Vergleich dich live mit bis zu drei Kumpels – ihr teilt euch einen Challenge-Code</p>
       <label class="field"><span>Challenge-Code</span>
         <input type="text" id="dCode" maxlength="10" placeholder="z. B. TH7K2M" autocapitalize="characters" autocomplete="off"></label>
       <label class="field"><span>Dein Name</span>
         <input type="text" id="dName" maxlength="18" placeholder="z. B. Jan" autocomplete="off"></label>
       <div class="field"><span>Du bist</span>
-        <div class="pick"><button type="button" data-slot="a">Athlet A</button><button type="button" data-slot="b">Athlet B</button></div>
+        <div class="pick" id="dPick">
+          <button type="button" data-slot="a">Athlet A<small>–</small></button><button type="button" data-slot="b">Athlet B<small>–</small></button>
+          <button type="button" data-slot="c">Athlet C<small>–</small></button><button type="button" data-slot="d">Athlet D<small>–</small></button>
+        </div>
       </div>
       <button class="btn" id="dJoin">Duell beitreten</button>
       <button class="btn ghost" style="margin-top:8px" id="dNew">Neuen Code erzeugen</button>
@@ -730,16 +748,7 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
 
     <!-- Verbunden -->
     <div id="duelLive" style="display:none">
-      <div class="versus">
-        <div class="vs-head">
-          <div class="vs-side me"><div class="who" id="vsNameA">Du</div><div class="score" id="vsScoreA">–</div><div class="unit">Bestleistung</div></div>
-          <div class="vs-mid">VS</div>
-          <div class="vs-side rival"><div class="who" id="vsNameB">Gegner</div><div class="score" id="vsScoreB">–</div><div class="unit">Bestleistung</div></div>
-        </div>
-        <div class="vs-bar"><i class="me" id="vsBarA" style="width:50%"></i><i class="rival" id="vsBarB" style="width:50%"></i></div>
-        <div class="vs-legend"><span id="vsLegA">–</span><span id="vsLegB">–</span></div>
-        <div class="vs-lead" id="vsLead">–</div>
-      </div>
+      <div class="versus" id="duelVersus"></div>
 
       <div class="card">
         <div class="card-head">
@@ -749,21 +758,18 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
             <button data-scope="30">30 Tage</button>
           </div>
         </div>
-        <table class="duel-table">
-          <thead><tr><th></th>
-            <th><span class="vdot me"></span><span id="thA">Du</span></th>
-            <th><span class="vdot rival"></span><span id="thB">Gegner</span></th></tr></thead>
-          <tbody id="duelBody"></tbody>
-        </table>
+        <div class="duel-scroll">
+          <table class="duel-table">
+            <thead><tr id="duelHead"></tr></thead>
+            <tbody id="duelBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card">
         <h2>Weg zu Tom Holland</h2>
         <p class="sub">27 Runden sind die Referenz</p>
-        <div class="row-between tiny muted" style="margin-bottom:5px"><span id="thaName">Du</span><span id="thaPctA">0 %</span></div>
-        <div class="bar"><span id="thaBarA"></span></div>
-        <div class="row-between tiny muted" style="margin:12px 0 5px"><span id="thbName">Gegner</span><span id="thaPctB">0 %</span></div>
-        <div class="bar"><span id="thaBarB" style="background:linear-gradient(135deg,#2D7FE0,#7FC0FF)"></span></div>
+        <div id="duelHolland"></div>
       </div>
 
       <div class="card">
@@ -1771,7 +1777,7 @@ function accountLogout(){
       $('#okLo').addEventListener('click', () => {
         if(account.unsub){ account.unsub(); account.unsub = null; }
         if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
-        account.on = false; duelConn.on = false; rival = null;
+        account.on = false; duelConn.on = false; rivals = {};
         state = defaultState();
         applyingRemote = true; save(); applyingRemote = false;
         closeModal();
@@ -1866,12 +1872,14 @@ function bindGate(){
    Gegner kommt umgekehrt per Live-Abo herein. Fällt Firebase aus, läuft
    der Tracker unverändert weiter.
    ============================================================ */
-let rival = null;          // { name, workouts:[{date,rounds,notes}], updated }
+let rivals = {};           // slot -> { name, workouts:[…], updated } aller anderen Athleten
 let duelConn = { on:false, fb:null, unsub:null };
 let duelPick = 'a';
+let pickOcc = {};          // zuletzt gesehene Slot-Belegung im Setup
 
 const HOLLAND = 27;
-const otherSlot = () => (state.duel && state.duel.slot === 'a') ? 'b' : 'a';
+const SLOTS = ['a','b','c','d'];   // muss zu firestore.rules passen
+const RIVAL_COLORS = ['--blue','--mint','--gold'];
 
 function newCode(){
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // ohne I/O/0/1 – am Telefon vorlesbar
@@ -1893,7 +1901,29 @@ function fromPayload(list){
     date: w.d, rounds: +w.r || 0, notes: w.n || '', created: w.c || 0, seasonId: w.s
   })).filter(w => typeof w.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.date));
 }
-const rivalList = () => rival ? fromPayload(rival.workouts).sort(byDate) : [];
+const listOf = doc => doc ? fromPayload(doc.workouts).sort(byDate) : [];
+
+/** Alle Teilnehmer in fester Reihenfolge: zuerst du, dann die anderen nach Slot.
+    Farbe hängt an der Position, damit sie in allen Karten gleich bleibt. */
+function duelAthletes(){
+  const css = getComputedStyle(document.documentElement);
+  const me = { slot:state.duel.slot, name:state.duel.name || 'Du', list:allWorkouts(), me:true,
+               color:css.getPropertyValue('--accent').trim() };
+  const others = SLOTS.filter(k => rivals[k]).map((k, i) => ({
+    slot:k, name:rivals[k].name || ('Athlet ' + k.toUpperCase()), list:listOf(rivals[k]), me:false,
+    color:css.getPropertyValue(RIVAL_COLORS[i % RIVAL_COLORS.length]).trim()
+  }));
+  return [me].concat(others);
+}
+
+/** Welche Slots eines Codes schon belegt sind: { a:'Jan', b:'TQ' } */
+async function duelOccupancy(code){
+  const { fs, db } = await firebaseReady();
+  const snap = await fs.getDocs(fs.collection(db, 'duels', code, 'athletes'));
+  const occ = {};
+  snap.docs.forEach(d => { occ[d.id] = (d.data().name || '').trim() || '?'; });
+  return occ;
+}
 
 async function duelConnect(){
   if(!CLOUD_READY || !state.duel) return false;
@@ -1912,23 +1942,24 @@ async function duelConnect(){
   }catch(e){ console.error('[Duell lesen]', e); }
   await duelPush();
 
-  // Beide Athleten-Dokumente abonnieren: das fremde für den Vergleich,
+  // Alle Athleten-Dokumente abonnieren: die fremden für den Vergleich,
   // das eigene für den Abgleich zwischen Handy und Laptop.
   duelConn.unsub = fs.onSnapshot(
     fs.collection(db, 'duels', state.duel.code, 'athletes'),
     snap => {
+      const next = {};
       snap.docs.forEach(d => {
-        if(d.id === otherSlot()){
-          const prevBest = rival ? computeStats(rivalList()).best : 0;
-          rival = d.data();
-          const nb = computeStats(rivalList()).best;
-          if(prevBest && nb > prevBest){
-            toast('⚔️ ' + rivalName() + ' hat vorgelegt: ' + round1(nb) + ' Runden!', true);
-          }
-        }else if(d.id === state.duel.slot){
-          mergeOwn(d.data());
+        if(d.id === state.duel.slot){ mergeOwn(d.data()); return; }
+        if(!SLOTS.includes(d.id)) return;
+        const doc = d.data();
+        const prevBest = rivals[d.id] ? computeStats(listOf(rivals[d.id])).best : 0;
+        const nb = computeStats(listOf(doc)).best;
+        if(prevBest && nb > prevBest){
+          toast('⚔️ ' + (doc.name || 'Gegner') + ' hat vorgelegt: ' + round1(nb) + ' Runden!', true);
         }
+        next[d.id] = doc;
       });
+      rivals = next;
       renderDuel();
     },
     err => { console.error('[Duell Abo]', err); duelConn.on = false; renderDuel(); }
@@ -1995,18 +2026,18 @@ async function duelPush(){
 /** Von jeder Stelle aufrufbar, die state.workouts verändert */
 function duelSync(){ duelPush(); renderDuel(); }
 
-const rivalName = () => (rival && rival.name) ? rival.name : 'Gegner';
-
 function within30(list){
   const limit = addDays(todayStr(), -29);
   return list.filter(w => w.date >= limit);
 }
 
+const runden = n => round1(n) + ' ' + (round1(n) === 1 ? 'Runde' : 'Runden');
+
 function renderDuel(){
   const setup = $('#duelSetup'), live = $('#duelLive');
   if(!state.duel){
     setup.style.display = ''; live.style.display = 'none';
-    $('#dHint').textContent = CLOUD_READY
+    if(!Object.keys(pickOcc).length) $('#dHint').textContent = CLOUD_READY
       ? 'Deine ' + state.workouts.length + ' bisherigen Workouts werden automatisch mitgenommen.'
       : '⚠️ Noch keine Firebase-Konfiguration hinterlegt – bis dahin lässt sich kein Duell starten (siehe README).';
     $('#dJoin').disabled = !CLOUD_READY;
@@ -2014,89 +2045,124 @@ function renderDuel(){
   }
   setup.style.display = 'none'; live.style.display = '';
 
-  const myName = state.duel.name || 'Du', rName = rivalName();
-  const mine = allWorkouts(), theirs = rivalList();
-  const a = computeStats(mine), b = computeStats(theirs);
+  const people = duelAthletes();
+  people.forEach(p => { p.stats = computeStats(p.list); });
+  const me = people[0], others = people.slice(1);
 
-  $('#vsNameA').textContent = myName;  $('#vsNameB').textContent = rName;
-  $('#thA').textContent = myName;      $('#thB').textContent = rName;
-  $('#thaName').textContent = myName;  $('#thbName').textContent = rName;
-  $('#vsScoreA').textContent = a.count ? round1(a.best) : '–';
-  $('#vsScoreB').textContent = b.count ? round1(b.best) : '–';
-  $('#vsLegA').textContent = a.count ? a.count + ' Workouts' : 'noch keins';
-  $('#vsLegB').textContent = b.count ? b.count + ' Workouts' : 'noch keins';
+  // Kopf: klassisches VS bei zwei Personen, sonst Rangliste
+  let head;
+  if(others.length <= 1){
+    const r = others[0], a = me.stats, b = r ? r.stats : computeStats([]);
+    const rName = r ? r.name : 'Gegner';
+    const sum = a.best + b.best, pa = sum > 0 ? a.best/sum*100 : 50;
+    head =
+      '<div class="vs-head">' +
+        '<div class="vs-side me"><div class="who">' + esc(me.name) + '</div><div class="score">' + (a.count ? round1(a.best) : '–') + '</div><div class="unit">Bestleistung</div></div>' +
+        '<div class="vs-mid">VS</div>' +
+        '<div class="vs-side rival"><div class="who">' + esc(rName) + '</div><div class="score">' + (b.count ? round1(b.best) : '–') + '</div><div class="unit">Bestleistung</div></div>' +
+      '</div>' +
+      '<div class="vs-bar"><i class="me" style="width:' + pa + '%"></i><i class="rival" style="width:' + (100-pa) + '%"></i></div>' +
+      '<div class="vs-legend"><span>' + (a.count ? a.count + ' Workouts' : 'noch keins') + '</span><span>' + (b.count ? b.count + ' Workouts' : 'noch keins') + '</span></div>';
+  }else{
+    const ranked = people.slice().sort((x, y) => y.stats.best - x.stats.best || (x.me ? -1 : 1));
+    const top = Math.max(HOLLAND, ...people.map(p => p.stats.best));
+    let place = 0, prev = null;
+    head = '<div class="rank-title">Rangliste · Bestleistung</div>' + ranked.map((p, i) => {
+      if(p.stats.best !== prev){ place = i + 1; prev = p.stats.best; }
+      return '<div class="rank-row">' +
+        '<span class="rk">' + (p.stats.count ? place : '–') + '</span>' +
+        '<span class="nm"><span class="vdot" style="background:' + p.color + '"></span>' + esc(p.name) +
+          '<small>' + (p.me ? 'du · ' : '') + (p.stats.count ? p.stats.count + (p.stats.count === 1 ? ' Workout' : ' Workouts') : 'noch keins') + '</small></span>' +
+        '<span class="sc" style="color:' + p.color + '">' + (p.stats.count ? round1(p.stats.best) : '–') + '</span>' +
+        '<span class="track"><i style="width:' + (p.stats.best/top*100) + '%;background:' + p.color + '"></i></span>' +
+      '</div>';
+    }).join('');
+  }
 
-  const sum = a.best + b.best, pa = sum > 0 ? a.best/sum*100 : 50;
-  $('#vsBarA').style.width = pa + '%';
-  $('#vsBarB').style.width = (100-pa) + '%';
-
-  const diff = round1(a.best - b.best), ab = Math.abs(diff), unit = ab === 1 ? 'Runde' : 'Runden';
+  // Lage in einem Satz
+  const a = me.stats, active = others.filter(p => p.stats.count);
+  const bestOther = active.slice().sort((x, y) => y.stats.best - x.stats.best)[0];
+  const waiting = others.filter(p => !p.stats.count).map(p => p.name);
   let msg;
-  if(!rival)          msg = rName + ' ist noch nicht beigetreten. Schick den Code weiter.';
-  else if(!a.count && !b.count) msg = 'Noch keine Workouts – tragt euer erstes Training ein.';
-  else if(!b.count)   msg = rName + ' hat noch nicht vorgelegt. Dein Vorsprung: ' + round1(a.best) + ' Runden.';
-  else if(!a.count)   msg = rName + ' führt mit ' + round1(b.best) + ' Runden. Zeit für dein erstes Workout.';
-  else if(diff > 0)   msg = '🔥 Du führst mit ' + round1(ab) + ' ' + unit + ' Vorsprung.';
-  else if(diff < 0)   msg = '😤 ' + rName + ' führt mit ' + round1(ab) + ' ' + unit + '. Aufholen!';
-  else                msg = '🤝 Gleichstand bei ' + round1(a.best) + ' Runden. Das nächste Workout entscheidet.';
-  $('#vsLead').textContent = msg;
+  if(!others.length)            msg = 'Noch niemand beigetreten. Schick den Code weiter.';
+  else if(!a.count && !active.length) msg = 'Noch keine Workouts – tragt euer erstes Training ein.';
+  else if(!active.length)       msg = waiting.join(', ') + ' ' + (waiting.length === 1 ? 'hat' : 'haben') + ' noch nicht vorgelegt. Dein Vorsprung: ' + runden(a.best) + '.';
+  else if(!a.count)             msg = bestOther.name + ' führt mit ' + runden(bestOther.stats.best) + '. Zeit für dein erstes Workout.';
+  else{
+    const diff = round1(a.best - bestOther.stats.best);
+    const lead = others.length === 1 ? '' : ' vor ' + bestOther.name;
+    if(diff > 0)      msg = '🔥 Du führst mit ' + runden(diff) + ' Vorsprung' + lead + '.';
+    else if(diff < 0) msg = '😤 ' + bestOther.name + ' führt – dir fehlen ' + runden(-diff) + '. Aufholen!';
+    else              msg = '🤝 Gleichstand' + (others.length === 1 ? '' : ' mit ' + bestOther.name) + ' bei ' + runden(a.best) + '. Das nächste Workout entscheidet.';
+    if(waiting.length) msg += ' ' + waiting.join(', ') + ' ' + (waiting.length === 1 ? 'hat' : 'haben') + ' noch nicht vorgelegt.';
+  }
+  $('#duelVersus').innerHTML = head + '<div class="vs-lead">' + esc(msg) + '</div>';
 
   // Direktvergleich
   const sc = ui.duelScope || 'all';
-  const ma = sc === '30' ? within30(mine) : mine, mb = sc === '30' ? within30(theirs) : theirs;
-  const sa = computeStats(ma), sb = computeStats(mb);
-  const last3 = l => { const r = l.slice(-3).map(w => w.rounds); return r.length ? round1(r.reduce((x,y)=>x+y,0)/r.length) : 0; };
+  const cols = people.map(p => {
+    const l = sc === '30' ? within30(p.list) : p.list;
+    const r3 = l.slice(-3).map(w => w.rounds);
+    return { p, s:computeStats(l), last3: r3.length ? round1(r3.reduce((x,y)=>x+y,0)/r3.length) : 0 };
+  });
   const rows = [
-    ['Bestleistung',    sa.best, sb.best, 1],
-    ['Ø Runden',        sa.avg,  sb.avg,  1],
-    ['Ø letzte 3',      last3(ma), last3(mb), 1],
-    ['Workouts',        sa.count, sb.count, 0],
-    ['Wiederholungen',  sa.reps, sb.reps, 0],
-    ['Längste Serie',   sa.longestStreak, sb.longestStreak, 0],
-    ['Beste Woche',     sa.bestWeek, sb.bestWeek, 0]
+    ['Bestleistung',   c => c.s.best, 1],
+    ['Ø Runden',       c => c.s.avg, 1],
+    ['Ø letzte 3',     c => c.last3, 1],
+    ['Workouts',       c => c.s.count, 0],
+    ['Wiederholungen', c => c.s.reps, 0],
+    ['Längste Serie',  c => c.s.longestStreak, 0],
+    ['Beste Woche',    c => c.s.bestWeek, 0]
   ];
-  $('#duelBody').innerHTML = rows.map(([label, va, vb, dec]) => {
+  $('#duelHead').innerHTML = '<th></th>' + cols.map(c =>
+    '<th><span class="vdot" style="background:' + c.p.color + '"></span>' + esc(c.p.me ? 'Du' : c.p.name) + '</th>').join('');
+  $('#duelBody').innerHTML = rows.map(([label, get, dec]) => {
+    const vals = cols.map(get), max = Math.max(...vals);
+    const winners = vals.filter(v => v === max).length;
     const f = v => dec ? (v ? String(round1(v)) : '–') : String(Math.round(v));   // Punkt wie im restlichen Tracker
-    return '<tr><td>' + label + '</td>' +
-      '<td' + (va > vb ? ' class="win"' : '') + '>' + f(va) + '</td>' +
-      '<td' + (vb > va ? ' class="win"' : '') + '>' + f(vb) + '</td></tr>';
+    return '<tr><td>' + label + '</td>' + vals.map(v =>
+      '<td' + (max > 0 && v === max && winners < vals.length ? ' class="win"' : '') + '>' + f(v) + '</td>').join('') + '</tr>';
   }).join('');
 
   // Weg zu Tom Holland
-  const pctA = Math.min(100, a.best/HOLLAND*100), pctB = Math.min(100, b.best/HOLLAND*100);
-  $('#thaBarA').style.width = pctA + '%';  $('#thaPctA').textContent = Math.round(pctA) + ' %';
-  $('#thaBarB').style.width = pctB + '%';  $('#thaPctB').textContent = Math.round(pctB) + ' %';
+  $('#duelHolland').innerHTML = people.map((p, i) => {
+    const pct = Math.min(100, p.stats.best/HOLLAND*100);
+    return '<div class="row-between tiny muted" style="margin:' + (i ? '12px' : '0') + ' 0 5px"><span>' + esc(p.name) + '</span><span>' + Math.round(pct) + ' %</span></div>' +
+      '<div class="bar"><span style="width:' + pct + '%' + (p.me ? '' : ';background:' + p.color) + '"></span></div>';
+  }).join('');
 
-  // Letzte Workouts beider
-  const tagged = mine.map(w => ({ w, mine:true })).concat(theirs.map(w => ({ w, mine:false })));
+  // Letzte Workouts aller
+  const tagged = [];
+  people.forEach(p => p.list.forEach(w => tagged.push({ w, p })));
   tagged.sort((x,y) => x.w.date === y.w.date ? 0 : (x.w.date < y.w.date ? 1 : -1));
   $('#duelRecent').innerHTML = tagged.length
-    ? tagged.slice(0,8).map(({w, mine:isMine}) =>
-        '<div class="duel-entry ' + (isMine ? 'me' : 'rival') + '">' +
-        '<div class="v" style="color:var(--' + (isMine ? 'accent' : 'blue') + ')">' + round1(w.rounds) + '</div>' +
-        '<div class="m"><b>' + esc(isMine ? myName : rName) + '</b><small>' +
+    ? tagged.slice(0, 6 + 2*people.length).map(({w, p}) =>
+        '<div class="duel-entry" style="border-left:3px solid ' + p.color + '">' +
+        '<div class="v" style="color:' + p.color + '">' + round1(w.rounds) + '</div>' +
+        '<div class="m"><b>' + esc(p.name) + '</b><small>' +
         weekdayShort(w.date) + ', ' + fmtDate(w.date) + (w.notes ? ' · ' + esc(w.notes) : '') +
         '</small></div></div>').join('')
     : '<p class="tiny muted" style="text-align:center;padding:16px">Noch keine Workouts.</p>';
 
   // Verbindung
   $('#duelCodeBox').textContent = state.duel.code;
-  const p = $('#duelPill');
-  p.textContent = duelConn.on ? 'live' : 'offline';
-  p.className = 'pill' + (duelConn.on ? ' on' : '');
+  const pill = $('#duelPill');
+  pill.textContent = duelConn.on ? 'live' : 'offline';
+  pill.className = 'pill' + (duelConn.on ? ' on' : '');
+  const free = SLOTS.filter(k => k !== state.duel.slot && !rivals[k]).length;
   $('#duelConnInfo').textContent = duelConn.on
-    ? 'Verbunden als ' + myName + ' (Athlet ' + state.duel.slot.toUpperCase() + '). Neue Workouts erscheinen bei euch beiden sofort.'
+    ? 'Verbunden als ' + me.name + ' (Athlet ' + state.duel.slot.toUpperCase() + '). Neue Workouts erscheinen bei allen sofort.' +
+      (free ? ' Noch ' + free + ' ' + (free === 1 ? 'Platz' : 'Plätze') + ' frei.' : ' Das Duell ist voll.')
     : 'Keine Verbindung zu Firebase – dein Tracker läuft normal weiter, der Vergleich ist aber nicht aktuell.';
 
-  renderDuelChart(mine, theirs, myName, rName);
+  renderDuelChart(people);
 }
 
-function renderDuelChart(mine, theirs, myName, rName){
+function renderDuelChart(people){
   if(typeof Chart === 'undefined' || !$('#chDuel')) return;
   const css = getComputedStyle(document.documentElement);
-  const cA = css.getPropertyValue('--accent').trim(), cB = css.getPropertyValue('--blue').trim();
   const grid = css.getPropertyValue('--line').trim(), muted = css.getPropertyValue('--muted').trim();
-  const dates = [...new Set(mine.concat(theirs).map(w => w.date))].sort();
+  const dates = [...new Set([].concat(...people.map(p => p.list)).map(w => w.date))].sort();
   const serie = list => dates.map(d => {
     const hit = list.filter(w => w.date === d);
     return hit.length ? Math.max(...hit.map(w => w.rounds)) : null;
@@ -2104,12 +2170,10 @@ function renderDuelChart(mine, theirs, myName, rName){
   if(charts.chDuel){ charts.chDuel.destroy(); delete charts.chDuel; }
   charts.chDuel = new Chart($('#chDuel'), {
     type:'line',
-    data:{ labels:dates.map(fmtShort), datasets:[
-      { label:myName, data:serie(mine),   borderColor:cA, backgroundColor:cA+'33', tension:.32,
-        spanGaps:true, pointRadius:4, borderWidth:3, fill:true },
-      { label:rName,  data:serie(theirs), borderColor:cB, backgroundColor:cB+'22', tension:.32,
-        spanGaps:true, pointRadius:4, borderWidth:3, fill:true }
-    ]},
+    data:{ labels:dates.map(fmtShort), datasets:people.map(p => ({
+      label:p.name, data:serie(p.list), borderColor:p.color, backgroundColor:p.color + (p.me ? '33' : '1A'),
+      tension:.32, spanGaps:true, pointRadius:4, borderWidth:3, fill:people.length <= 2
+    }))},
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ labels:{ color:muted, font:{ weight:700, size:11 }, boxWidth:12, boxHeight:12 } } },
@@ -2126,6 +2190,21 @@ async function duelJoin(){
   if(!name){ $('#dHint').textContent = 'Bitte deinen Namen eingeben.'; return; }
   $('#dJoin').disabled = true;
   $('#dHint').textContent = 'Verbinde …';
+  // Belegten Slot nur übernehmen, wenn es derselbe Name ist (= dein zweites Gerät)
+  try{
+    const chosen = duelPick;
+    const occ = await duelOccupancy(code);
+    renderPick(occ);                       // springt ggf. auf einen freien Platz
+    const holder = occ[chosen];
+    if(holder && holder.toLowerCase() !== name.toLowerCase()){
+      const free = SLOTS.find(k => !occ[k]);
+      $('#dHint').textContent = 'Athlet ' + chosen.toUpperCase() + ' ist schon ' + holder + '. ' +
+        (free ? 'Athlet ' + free.toUpperCase() + ' ist frei und jetzt ausgewählt.' : 'Dieses Duell ist voll.') +
+        ' Gleicher Name = dein zweites Gerät.';
+      $('#dJoin').disabled = false;
+      return;
+    }
+  }catch(e){ console.error('[Duell prüfen]', e); }
   state.duel = { code, slot:duelPick, name };
   save();
   try{
@@ -2150,7 +2229,7 @@ function duelLeave(){
     () => {
       $('#okLv').addEventListener('click', () => {
         if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
-        duelConn.on = false; rival = null; state.duel = null; save();
+        duelConn.on = false; rivals = {}; state.duel = null; save();
         closeModal(); renderDuel(); toast('Duell verlassen');
       });
       $('#noLv').addEventListener('click', closeModal);
@@ -2160,7 +2239,12 @@ function duelLeave(){
 
 async function duelShare(){
   const url = location.origin + location.pathname + '#' + state.duel.code;
-  const text = 'Tom Holland Challenge – tritt meinem Duell bei. Code: ' + state.duel.code + '\n' + url;
+  const text = 'Tom Holland Challenge – tritt meinem Duell bei!\n' +
+    '20 Min AMRAP: 5 Pull-Ups, 10 Push-Ups, 15 Air Squats pro Runde.\n\n' +
+    '1. Link öffnen: ' + url + '\n' +
+    '2. Zugangscode erzeugen und gut aufheben (das ist dein Login)\n' +
+    '3. Tab ⚔️ Duell: Code ' + state.duel.code + ' ist schon eingetragen – Name eingeben, einen freien Athleten-Platz wählen, beitreten\n' +
+    '4. Nach jedem Training das Workout eintragen';
   if(navigator.share){ try{ await navigator.share({ title:'Tom Holland Duell', text, url }); return; }catch(e){} }
   try{ await navigator.clipboard.writeText(text); toast('Einladung kopiert'); }
   catch(e){ openModal('<h3>Einladung</h3><div class="code-box">' + esc(state.duel.code) + '</div>' +
@@ -2170,13 +2254,20 @@ async function duelShare(){
 }
 
 function bindDuel(){
-  $$('#duelSetup .pick button').forEach(b => b.addEventListener('click', () => {
+  $$('#dPick button').forEach(b => b.addEventListener('click', () => {
     duelPick = b.dataset.slot;
-    $$('#duelSetup .pick button').forEach(x => x.classList.toggle('sel', x === b));
+    $$('#dPick button').forEach(x => x.classList.toggle('sel', x === b));
   }));
-  $$('#duelSetup .pick button')[0].classList.add('sel');
+  renderPick({});
+  // Sobald ein Code dasteht: nachsehen, welche Plätze schon vergeben sind
+  let probeT = null;
+  $('#dCode').addEventListener('input', () => {
+    clearTimeout(probeT);
+    probeT = setTimeout(probePick, 450);
+  });
   $('#dNew').addEventListener('click', () => {
     $('#dCode').value = newCode();
+    renderPick({});
     $('#dHint').textContent = 'Neuer Code erzeugt – schick ihn deinem Gegner, damit er beitreten kann.';
   });
   $('#dJoin').addEventListener('click', duelJoin);
@@ -2189,8 +2280,36 @@ function bindDuel(){
   }));
   // Code aus dem Einladungslink vorbelegen: …/index.html#TH7K2M
   const h = location.hash.replace('#','').trim().toUpperCase();
-  if(h && !state.duel) $('#dCode').value = h;
+  if(h && !state.duel){ $('#dCode').value = h; probePick(); }
   if(state.account && !$('#dName').value) $('#dName').value = state.account.name;
+}
+
+/** Slot-Knöpfe beschriften; wählt den ersten freien, falls der gewählte belegt ist */
+function renderPick(occ){
+  pickOcc = occ;
+  const name = ($('#dName').value || '').trim().toLowerCase();
+  const mineOrFree = k => !occ[k] || occ[k].toLowerCase() === name;
+  if(!mineOrFree(duelPick)) duelPick = SLOTS.find(k => occ[k] && occ[k].toLowerCase() === name) || SLOTS.find(k => !occ[k]) || duelPick;
+  $$('#dPick button').forEach(b => {
+    const k = b.dataset.slot;
+    b.querySelector('small').textContent = occ[k] ? 'belegt: ' + occ[k] : (Object.keys(occ).length ? 'frei' : '–');
+    b.classList.toggle('taken', !!occ[k]);
+    b.classList.toggle('sel', k === duelPick);
+  });
+}
+async function probePick(){
+  const code = $('#dCode').value.trim().toUpperCase();
+  if(!CLOUD_READY || state.duel || code.length < 4){ renderPick({}); return; }
+  try{
+    const occ = await duelOccupancy(code);
+    if($('#dCode').value.trim().toUpperCase() !== code) return;   // inzwischen weitergetippt
+    renderPick(occ);
+    const n = Object.keys(occ).length;
+    $('#dHint').textContent = n
+      ? 'Duell ' + code + ': ' + Object.values(occ).join(', ') + ' ' + (n === 1 ? 'ist' : 'sind') + ' schon dabei. ' +
+        (n < SLOTS.length ? 'Ein freier Platz ist vorausgewählt.' : 'Alle Plätze sind vergeben.')
+      : 'Neues Duell – noch niemand dabei. Deine ' + state.workouts.length + ' bisherigen Workouts werden mitgenommen.';
+  }catch(e){ console.error('[Duell prüfen]', e); }
 }
 
 /* ---------- 5. Timer ---------- */
@@ -2707,7 +2826,7 @@ function hardReset(){
       $('#okRst').addEventListener('click', () => {
         makeBackup(true);
         if(duelConn.unsub){ duelConn.unsub(); duelConn.unsub = null; }
-        duelConn.on = false; rival = null;
+        duelConn.on = false; rivals = {};
         state = defaultState(); save(); applyTheme(); renderAll(); renderDuel();
         closeModal(); toast('Alle Daten zurückgesetzt (Backup liegt vor)');
       });
@@ -2728,7 +2847,7 @@ function switchView(v){
   $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   window.scrollTo({ top:0, behavior:'smooth' });
   if(v === 'charts') renderCharts();
-  if(v === 'duel') renderDuel();
+  if(v === 'duel'){ renderDuel(); if(!state.duel) probePick(); }
 }
 function updateCalc(){
   const r = parseFloat($('#inRounds').value) || 0;

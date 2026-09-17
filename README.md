@@ -3,7 +3,7 @@
 Der vollständige Tracker für die **Tom Holland Challenge** (20 Min AMRAP: 5 Pull-Ups,
 10 Push-Ups, 15 Air Squats pro Runde) – Dashboard, Workout-Erfassung, Aufwärm-Assistent,
 AMRAP-Timer, Charts, Kalender, Rekorde, Abzeichen, Seasons – erweitert um einen
-**Duell-Modus**, in dem sich zwei Athleten live vergleichen.
+**Duell-Modus**, in dem sich bis zu vier Athleten live vergleichen.
 
 Eine einzelne `index.html`, kein Build. Gehostet auf GitHub Pages, das Duell läuft über
 Firebase Firestore.
@@ -37,8 +37,16 @@ Danach committen; GitHub Pages baut automatisch neu.
 
 ## Duell benutzen
 
-Im Tab **⚔️ Duell**: *Neuen Code erzeugen* → Athlet A wählen → beitreten. Den Code dem
-Gegner schicken, der wählt Athlet B. Die bisherigen Workouts werden automatisch mitgenommen.
+Im Tab **⚔️ Duell**: *Neuen Code erzeugen* → Athlet A wählen → beitreten. Den Code den
+Kumpels schicken; bis zu vier Athleten (A–D) passen in ein Duell. Die bisherigen Workouts
+werden automatisch mitgenommen.
+
+Sobald ein Code im Feld steht, zeigt die Seite, welche Plätze schon vergeben sind, und wählt
+den ersten freien vor. Einen belegten Platz kann nur übernehmen, wer denselben Namen eingibt
+(= zweites Gerät derselben Person).
+
+Bei zwei Athleten erscheint oben das klassische VS, ab drei eine Rangliste nach Bestleistung.
+Direktvergleich, Weg zu Tom Holland, Verlauf und letzte Workouts zeigen alle Teilnehmer.
 Über *Einladung teilen* gibt es einen Link mit Code (`…/index.html#THXXXX`), der das Feld
 beim Gegner schon ausfüllt.
 
@@ -79,15 +87,15 @@ Seasons, Abzeichen und Einstellungen laufen über das Konto (siehe oben), nicht 
 Workouts, die zu einer auf dem anderen Gerät unbekannten Season gehören, landen dort in der
 aktuellen Season.
 
-Wichtig: Wählt der Gegner denselben Slot wie du, überschreibt ihr euch gegenseitig.
-A und B müssen unterschiedlich vergeben sein.
+Wichtig: Zwei verschiedene Personen im selben Slot würden sich gegenseitig überschreiben.
+Die Seite verhindert das beim Beitreten über den Namen.
 
 ## Datenmodell
 
 ```
 athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s}], removed:[id],
                                 seasons, currentSeasonId, badges, settings, theme }
-duels/{duellcode}/athletes/{a|b}
+duels/{duellcode}/athletes/{a|b|c|d}
                               { name, workouts:[{i,d,r,n,c,s}], removed:[id], updated }
 ```
 
