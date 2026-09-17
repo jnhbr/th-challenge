@@ -38,6 +38,8 @@
   --mint:#00E5A0;
   --blue:#4DA3FF;
   --gold:#FFC857;
+  --violet:#A98BFF;
+  --pink:#FF7AC8;
   --danger:#FF4D5E;
   --shadow:0 10px 30px rgba(0,0,0,.45);
   --radius:18px;
@@ -187,6 +189,14 @@ input[type=date],input[type=number],input[type=text],textarea,select{
 }
 input:focus,textarea:focus,select:focus{border-color:var(--accent)}
 textarea{min-height:72px;resize:vertical}
+/* Angefangene Runde: drei kleine Zahlenfelder nebeneinander */
+.partial{margin-bottom:12px}
+.partial > span{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.partial .row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.partial label{display:block}
+.partial label small{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.partial input{text-align:center;font-weight:800}
+.partial .hint{font-size:11.5px;color:var(--muted);margin:7px 0 0}
 
 .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
 .seg button{border:0;background:transparent;color:var(--muted);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:9px;white-space:nowrap}
@@ -261,6 +271,10 @@ textarea{min-height:72px;resize:vertical}
   width:52px;height:52px;border-radius:14px;background:var(--grad);color:#fff;
   display:grid;place-items:center;font-weight:900;font-size:20px;flex:0 0 auto;line-height:1
 }
+.entry .rounds b{font-weight:900;line-height:1}
+/* Wiederholungen der angefangenen Runde, klein unter der Rundenzahl */
+.entry .rounds small{font-size:10.5px;font-weight:800;line-height:1;margin-top:2px;opacity:.9}
+.entry .meta .p{font-size:11.5px;color:var(--accent-2);font-weight:700;margin-top:2px}
 .entry .rounds.pr{background:linear-gradient(135deg,#FFC857,#FF9F1C);color:#1A1200}
 .entry .meta{flex:1;min-width:0}
 .entry .meta .d{font-weight:800;font-size:14px}
@@ -379,6 +393,11 @@ html[data-theme="light"] .versus{
   border:1px solid var(--line);overflow:hidden;margin-top:-3px}
 .rank-row .track i{display:block;height:100%;border-radius:99px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
 .duel-scroll{overflow-x:auto;margin:0 -4px}
+/* Bei sechs Athleten wird die Tabelle breiter als das Display: der Rahmen
+   scrollt, Namen kürzen statt umzubrechen. */
+.duel-table th,.duel-table td{white-space:nowrap}
+.duel-table th .nm{display:inline-block;max-width:72px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;vertical-align:middle}
 .code-box{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:800;
   letter-spacing:.2em;text-align:center;background:var(--surface-2);border:1px dashed var(--line);
   border-radius:13px;padding:14px;margin-bottom:12px}
@@ -533,7 +552,16 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
       <h2>Workout erfassen</h2>
       <p class="sub">20 Min AMRAP · 5 Pull-Ups / 10 Push-Ups / 15 Squats</p>
       <label class="field"><span>Datum</span><input type="date" id="inDate"></label>
-      <label class="field"><span>Geschaffte Runden</span><input type="number" id="inRounds" min="0" max="80" step="0.5" inputmode="decimal" placeholder="z. B. 11"></label>
+      <label class="field"><span>Volle Runden</span><input type="number" id="inRounds" min="0" max="80" step="1" inputmode="numeric" placeholder="z. B. 10"></label>
+      <div class="partial">
+        <span>Angefangene Runde (optional)</span>
+        <div class="row">
+          <label><small>Pull-Ups</small><input type="number" id="inPull" min="0" max="5" step="1" inputmode="numeric" placeholder="0"></label>
+          <label><small>Push-Ups</small><input type="number" id="inPush" min="0" max="10" step="1" inputmode="numeric" placeholder="0"></label>
+          <label><small>Squats</small><input type="number" id="inSquat" min="0" max="15" step="1" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <p class="hint" id="partialHint">Was du nach der letzten vollen Runde noch geschafft hast – z. B. 5 Pull-Ups und 3 Push-Ups.</p>
+      </div>
       <label class="field"><span>Notizen (optional)</span><textarea id="inNotes" placeholder="Wie lief's? Pull-Ups mit Band? Müde?"></textarea></label>
       <div class="grid g4" style="margin-bottom:14px">
         <div class="stat"><div class="lbl">Pull-Ups</div><div class="val" id="cPull" style="font-size:22px">0</div></div>
@@ -730,7 +758,7 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
     <!-- Nicht verbunden: Einrichtung -->
     <div class="card" id="duelSetup">
       <h2>Duell starten</h2>
-      <p class="sub">Vergleich dich live mit bis zu drei Kumpels – ihr teilt euch einen Challenge-Code</p>
+      <p class="sub">Vergleich dich live mit bis zu fünf Kumpels – ihr teilt euch einen Challenge-Code</p>
       <label class="field"><span>Challenge-Code</span>
         <input type="text" id="dCode" maxlength="10" placeholder="z. B. TH7K2M" autocapitalize="characters" autocomplete="off"></label>
       <label class="field"><span>Dein Name</span>
@@ -739,6 +767,7 @@ html[data-theme="light"] .warm-list li{background:var(--bg)}
         <div class="pick" id="dPick">
           <button type="button" data-slot="a">Athlet A<small>–</small></button><button type="button" data-slot="b">Athlet B<small>–</small></button>
           <button type="button" data-slot="c">Athlet C<small>–</small></button><button type="button" data-slot="d">Athlet D<small>–</small></button>
+          <button type="button" data-slot="e">Athlet E<small>–</small></button><button type="button" data-slot="f">Athlet F<small>–</small></button>
         </div>
       </div>
       <button class="btn" id="dJoin">Duell beitreten</button>
@@ -987,6 +1016,65 @@ function round1(n){ return Math.round(n*10)/10; }
 function nf(n){ return new Intl.NumberFormat('de-CH').format(Math.round(n)); }
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
+/* ---------- 1b. Angefangene Runde ----------
+   Ein Workout hat `rounds` volle Runden und optional `partial` – die
+   Wiederholungen, die in der danach angefangenen Runde noch geschafft wurden
+   (Reihenfolge Pull-Ups -> Push-Ups -> Squats, höchstens 5 / 10 / 15).
+   Alle Auswertungen rechnen damit: `effRounds` gibt die Runden als Zahl
+   (10 volle Runden + 8 Reps = 10.27), `repsOf` die exakten Wiederholungen. */
+function partialOf(w){
+  const p = w && w.partial;
+  if(!p) return null;
+  const o = {
+    pull:  clamp(Math.round(+p.pull  || 0), 0, PER_ROUND.pull),
+    push:  clamp(Math.round(+p.push  || 0), 0, PER_ROUND.push),
+    squat: clamp(Math.round(+p.squat || 0), 0, PER_ROUND.squat)
+  };
+  return (o.pull || o.push || o.squat) ? o : null;
+}
+function partialReps(p){ return p ? p.pull + p.push + p.squat : 0; }
+/** Wiederholungen eines Workouts, angefangene Runde eingerechnet */
+function repsOf(w){
+  const p = partialOf(w), r = w.rounds || 0;
+  const o = { pull:  r*PER_ROUND.pull  + (p ? p.pull  : 0),
+              push:  r*PER_ROUND.push  + (p ? p.push  : 0),
+              squat: r*PER_ROUND.squat + (p ? p.squat : 0) };
+  o.total = o.pull + o.push + o.squat;
+  return o;
+}
+/** Runden als vergleichbare Zahl: volle Runden + Anteil der angefangenen */
+function effRounds(w){ return (w.rounds || 0) + partialReps(partialOf(w))/REPS_PER_ROUND; }
+/** Schreibweise wie im CrossFit: „11" oder „10+8" (volle Runden + Reps) */
+function fmtScore(w){
+  const r = partialReps(partialOf(w));
+  return round1(w.rounds || 0) + (r ? '+' + r : '');
+}
+/** Angefangene Runde als Klartext, z. B. „5 Pull-Ups · 3 Push-Ups"
+    (`short` kürzt für enge Zeilen auf „5 Pull · 3 Push") */
+function partialText(w, short){
+  const p = partialOf(w);
+  if(!p) return '';
+  const parts = [];
+  if(p.pull)  parts.push(p.pull  + (short ? ' Pull' : ' Pull-Ups'));
+  if(p.push)  parts.push(p.push  + (short ? ' Push' : ' Push-Ups'));
+  if(p.squat) parts.push(p.squat + ' Squats');
+  return parts.join(' · ');
+}
+/** Schlüssel für die Dubletten-Erkennung beim Zusammenführen zweier Geräte */
+const dayKey = w => w.date + '|' + round1(effRounds(w));
+/** Kompaktform eines Workouts für Konto- und Duell-Übertragung.
+    `p` steht nur drin, wenn es eine angefangene Runde gibt. */
+function compactWorkout(w){
+  const o = { i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId };
+  const q = partialOf(w);
+  if(q) o.p = [q.pull, q.push, q.squat];
+  return o;
+}
+/** Angefangene Runde aus der Kompaktform zurücklesen */
+function payloadPartial(w){
+  return Array.isArray(w.p) ? partialOf({ partial:{ pull:w.p[0], push:w.p[1], squat:w.p[2] } }) : null;
+}
+
 /** ISO-Kalenderwoche als sortierbarer Schlüssel, z. B. "2026-KW38" */
 function isoWeekKey(dateStr){
   const d = fromStr(dateStr);
@@ -1080,22 +1168,24 @@ function computeStats(list){
 
   let running = 0;
   list.forEach((w, i) => {
-    s.rounds += w.rounds;
-    s.pull  += w.rounds * PER_ROUND.pull;
-    s.push  += w.rounds * PER_ROUND.push;
-    s.squat += w.rounds * PER_ROUND.squat;
-    if(w.rounds > running){
+    const eff = effRounds(w), reps = repsOf(w);
+    s.rounds += eff;
+    s.pull  += reps.pull;
+    s.push  += reps.push;
+    s.squat += reps.squat;
+    if(eff > running){
       if(i > 0){ s.prBeaten = true; }
-      running = w.rounds;
+      running = eff;
       s.prDates.push(w.date);
     }
-    if(w.rounds > s.best){ s.best = w.rounds; s.bestDate = w.date; }
+    if(eff > s.best){ s.best = eff; s.bestDate = w.date; }
     if(i > 0){
-      const gain = w.rounds - list[i-1].rounds;
+      const gain = eff - effRounds(list[i-1]);
       if(gain > s.bestGain){ s.bestGain = gain; s.bestGainDate = w.date; }
     }
   });
   s.reps = s.pull + s.push + s.squat;
+  s.rounds = round1(s.rounds);
   s.avg = round1(s.rounds / list.length);
   s.firstDate = list[0].date;
   s.lastDate = list[list.length-1].date;
@@ -1121,9 +1211,9 @@ function computeStats(list){
 /** Einfache lineare Regression y = a + b*x über die Workout-Reihenfolge */
 function trend(list){
   const n = list.length;
-  if(n < 2) return { slope:0, intercept: n ? list[0].rounds : 0, ok:false };
+  if(n < 2) return { slope:0, intercept: n ? effRounds(list[0]) : 0, ok:false };
   let sx=0, sy=0, sxy=0, sxx=0;
-  list.forEach((w,i) => { sx+=i; sy+=w.rounds; sxy+=i*w.rounds; sxx+=i*i; });
+  list.forEach((w,i) => { const y = effRounds(w); sx+=i; sy+=y; sxy+=i*y; sxx+=i*i; });
   const den = n*sxx - sx*sx;
   if(den === 0) return { slope:0, intercept: sy/n, ok:false };
   const slope = (n*sxy - sx*sy)/den;
@@ -1172,7 +1262,7 @@ function forecast(){
 
   // Wann 27 Runden? effSlope = gedämpfter Runden-Zuwachs pro Workout
   let date27 = null, hint27 = '';
-  const base = list.length ? list[list.length-1].rounds : 0;
+  const base = list.length ? effRounds(list[list.length-1]) : 0;
   if(stats.best >= TOM){ hint27 = 'Bereits geschafft. Respekt.'; }
   else if(effSlope <= 0.02){ hint27 = 'Trend noch zu flach – mehr Daten nötig.'; }
   else{
@@ -1191,8 +1281,8 @@ function forecast(){
   if(src.length >= 4){
     const last3 = src.slice(-3), prev3 = src.slice(-6, -3);
     if(prev3.length){
-      const a = last3.reduce((x,w)=>x+w.rounds,0)/last3.length;
-      const b = prev3.reduce((x,w)=>x+w.rounds,0)/prev3.length;
+      const a = last3.reduce((x,w)=>x+effRounds(w),0)/last3.length;
+      const b = prev3.reduce((x,w)=>x+effRounds(w),0)/prev3.length;
       const diff = round1(a-b);
       trendTxt = (diff > 0 ? '+' : '') + diff + ' Runden';
       trendHint = 'Ø ' + round1(b) + ' → Ø ' + round1(a) + (diff > 0 ? ' · aufwärts 🚀' : diff < 0 ? ' · leichter Rücksetzer' : ' · stabil');
@@ -1339,17 +1429,21 @@ function renderLogList(){
   const prSet = new Set();
   let run = 0;
   (ui.logScope === 'all' ? allWorkouts() : seasonWorkouts(state.currentSeasonId)).forEach(w => {
-    if(w.rounds > run){ run = w.rounds; prSet.add(w.id); }
+    if(effRounds(w) > run){ run = effRounds(w); prSet.add(w.id); }
   });
 
   $('#logList').innerHTML = filtered.map(w => {
     const isPr = prSet.has(w.id);
+    const reps = repsOf(w), pt = partialText(w, true);
+    const extra = partialReps(partialOf(w));
     return '<div class="entry">' +
-      '<div class="rounds' + (isPr ? ' pr' : '') + '">' + round1(w.rounds) + '</div>' +
+      '<div class="rounds' + (isPr ? ' pr' : '') + '"><b>' + round1(w.rounds) + '</b>' +
+        (extra ? '<small>+' + extra + '</small>' : '') + '</div>' +
       '<div class="meta">' +
         '<div class="d">' + weekdayShort(w.date) + ', ' + fmtDate(w.date) + (isPr ? ' · 🥇 PR' : '') + '</div>' +
-        '<div class="r mono">' + nf(w.rounds*PER_ROUND.pull) + ' Pull · ' + nf(w.rounds*PER_ROUND.push) + ' Push · ' +
-          nf(w.rounds*PER_ROUND.squat) + ' Squats · ' + nf(w.rounds*REPS_PER_ROUND) + ' Reps</div>' +
+        '<div class="r mono">' + nf(reps.pull) + ' Pull · ' + nf(reps.push) + ' Push · ' +
+          nf(reps.squat) + ' Squats · ' + nf(reps.total) + ' Reps</div>' +
+        (pt ? '<div class="p">+ ' + (round1(w.rounds)+1) + '. Runde: ' + pt + '</div>' : '') +
         (w.notes ? '<div class="note">„' + esc(w.notes) + '"</div>' : '') +
       '</div>' +
       '<button class="del" data-del="' + w.id + '" title="Löschen">🗑</button>' +
@@ -1374,7 +1468,7 @@ function renderCalendar(){
 
   // Workouts nach Datum + PR-Tage (über alle Zeiten)
   const byDay = {};
-  allWorkouts().forEach(w => { byDay[w.date] = (byDay[w.date] || 0) + w.rounds; });
+  allWorkouts().forEach(w => { byDay[w.date] = (byDay[w.date] || 0) + effRounds(w); });
   const prDays = new Set(computeStats(allWorkouts()).prDates);
   const season = currentSeason();
 
@@ -1528,7 +1622,7 @@ function renderCharts(){
   charts.ch1 = new Chart($('#ch1'), {
     type:'bar',
     data:{ labels:labels1, datasets:[
-      { label:'Runden', data:list.map(w => w.rounds), backgroundColor:accent + 'cc', borderRadius:7, maxBarThickness:34, order:2 },
+      { label:'Runden', data:list.map(w => round1(effRounds(w))), backgroundColor:accent + 'cc', borderRadius:7, maxBarThickness:34, order:2 },
       { label:'Trend', type:'line', data:trendData, borderColor:mint, borderDash:[6,5], borderWidth:2,
         pointRadius:0, tension:.25, order:1 },
       { label:'Tom Holland', type:'line', data:list.map(()=>TOM), borderColor:gold, borderWidth:1.5,
@@ -1539,7 +1633,7 @@ function renderCharts(){
 
   // 2) Ø Runden pro Woche
   const weeks = {};
-  list.forEach(w => { const k = isoWeekKey(w.date); (weeks[k] = weeks[k] || []).push(w.rounds); });
+  list.forEach(w => { const k = isoWeekKey(w.date); (weeks[k] = weeks[k] || []).push(effRounds(w)); });
   const wk = Object.keys(weeks).sort();
   destroy('ch2');
   charts.ch2 = new Chart($('#ch2'), {
@@ -1553,7 +1647,7 @@ function renderCharts(){
 
   // 3) PR im Zeitverlauf (Treppe)
   let run = 0;
-  const prSeries = list.map(w => { run = Math.max(run, w.rounds); return run; });
+  const prSeries = list.map(w => { run = Math.max(run, effRounds(w)); return round1(run); });
   destroy('ch3');
   charts.ch3 = new Chart($('#ch3'), {
     type:'line',
@@ -1567,7 +1661,7 @@ function renderCharts(){
 
   // 4) Kumulierte Wiederholungen
   let cum = 0;
-  const cumData = list.map(w => (cum += w.rounds * REPS_PER_ROUND));
+  const cumData = list.map(w => (cum += repsOf(w).total));
   destroy('ch4');
   charts.ch4 = new Chart($('#ch4'), {
     type:'line',
@@ -1643,9 +1737,7 @@ function accountPayload(){
   return {
     name: state.account.name || 'Athlet',
     updated: state.updated || Date.now(),
-    workouts: allWorkouts().map(w => ({
-      i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId
-    })),
+    workouts: allWorkouts().map(compactWorkout),
     removed: (state.duelRemoved||[]).slice(-300),
     seasons: state.seasons,
     currentSeasonId: state.currentSeasonId,
@@ -1668,14 +1760,14 @@ function accountMerge(doc){
 
   const dead = new Set(state.duelRemoved);
   const known = new Set(state.workouts.map(w => w.id));
-  const sameDay = new Set(state.workouts.map(w => w.date + '|' + w.rounds));
+  const sameDay = new Set(state.workouts.map(dayKey));
   const seasonIds = new Set(state.seasons.map(x => x.id));
 
   const incoming = (doc.workouts || [])
     .filter(w => w && typeof w.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.d))
     .map(w => ({ id:w.i || ('w_'+(w.c||Date.now())+'_x'), date:w.d, rounds:+w.r||0,
-                 notes:w.n||'', created:w.c||0, seasonId:w.s }))
-    .filter(w => !known.has(w.id) && !dead.has(w.id) && !sameDay.has(w.date + '|' + w.rounds));
+                 notes:w.n||'', created:w.c||0, seasonId:w.s, partial:payloadPartial(w) }))
+    .filter(w => !known.has(w.id) && !dead.has(w.id) && !sameDay.has(dayKey(w)));
 
   const drop = state.workouts.filter(w => dead.has(w.id));
   if(incoming.length || drop.length){
@@ -1880,8 +1972,8 @@ let pickReady = false;     // erst nach dem Nachschauen dürfen Plätze gewählt
 let pickCode = '';         // Code, zu dem pickOcc gehört
 
 const HOLLAND = 27;
-const SLOTS = ['a','b','c','d'];   // muss zu firestore.rules passen
-const RIVAL_COLORS = ['--blue','--mint','--gold'];
+const SLOTS = ['a','b','c','d','e','f'];   // muss zu firestore.rules passen
+const RIVAL_COLORS = ['--blue','--mint','--gold','--violet','--pink'];
 
 function newCode(){
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // ohne I/O/0/1 – am Telefon vorlesbar
@@ -1892,15 +1984,14 @@ function newCode(){
     Die ID wird mitgeschickt, damit zwei Geräte desselben Athleten
     zusammengeführt statt überschrieben werden. */
 function myPayload(){
-  return allWorkouts().map(w => ({
-    i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId
-  }));
+  return allWorkouts().map(compactWorkout);
 }
 /** Wandelt eine Payload zurück in die Struktur des Trackers */
 function fromPayload(list){
   return (Array.isArray(list) ? list : []).map(w => ({
     id: w.i || ('w_' + (w.c || Date.now()) + '_rem'),
-    date: w.d, rounds: +w.r || 0, notes: w.n || '', created: w.c || 0, seasonId: w.s
+    date: w.d, rounds: +w.r || 0, notes: w.n || '', created: w.c || 0, seasonId: w.s,
+    partial: payloadPartial(w)
   })).filter(w => typeof w.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.date));
 }
 const listOf = doc => doc ? fromPayload(doc.workouts).sort(byDate) : [];
@@ -1987,11 +2078,11 @@ function mergeOwn(doc){
   // von Hand erfasst ergibt zwei verschiedene IDs, meint aber ein Workout.
   // Da hinter beiden Geräten dieselbe Person steckt, ist gleiches Datum bei
   // gleicher Rundenzahl praktisch immer derselbe Eintrag.
-  const sameDay = new Set(state.workouts.map(w => w.date + '|' + w.rounds));
+  const sameDay = new Set(state.workouts.map(dayKey));
 
   const incoming = fromPayload(doc.workouts)
     .filter(w => !known.has(w.id) && !dead.has(w.id))
-    .filter(w => !sameDay.has(w.date + '|' + w.rounds))
+    .filter(w => !sameDay.has(dayKey(w)))
     .map(w => Object.assign({}, w, {
       seasonId: seasonIds.has(w.seasonId) ? w.seasonId : state.currentSeasonId
     }));
@@ -2104,7 +2195,7 @@ function renderDuel(){
   const sc = ui.duelScope || 'all';
   const cols = people.map(p => {
     const l = sc === '30' ? within30(p.list) : p.list;
-    const r3 = l.slice(-3).map(w => w.rounds);
+    const r3 = l.slice(-3).map(effRounds);
     return { p, s:computeStats(l), last3: r3.length ? round1(r3.reduce((x,y)=>x+y,0)/r3.length) : 0 };
   });
   const rows = [
@@ -2117,7 +2208,8 @@ function renderDuel(){
     ['Beste Woche',    c => c.s.bestWeek, 0]
   ];
   $('#duelHead').innerHTML = '<th></th>' + cols.map(c =>
-    '<th><span class="vdot" style="background:' + c.p.color + '"></span>' + esc(c.p.me ? 'Du' : c.p.name) + '</th>').join('');
+    '<th><span class="vdot" style="background:' + c.p.color + '"></span>' +
+    '<span class="nm">' + esc(c.p.me ? 'Du' : c.p.name) + '</span></th>').join('');
   $('#duelBody').innerHTML = rows.map(([label, get, dec]) => {
     const vals = cols.map(get), max = Math.max(...vals);
     const winners = vals.filter(v => v === max).length;
@@ -2140,9 +2232,10 @@ function renderDuel(){
   $('#duelRecent').innerHTML = tagged.length
     ? tagged.slice(0, 6 + 2*people.length).map(({w, p}) =>
         '<div class="duel-entry" style="border-left:3px solid ' + p.color + '">' +
-        '<div class="v" style="color:' + p.color + '">' + round1(w.rounds) + '</div>' +
+        '<div class="v" style="color:' + p.color + '">' + fmtScore(w) + '</div>' +
         '<div class="m"><b>' + esc(p.name) + '</b><small>' +
-        weekdayShort(w.date) + ', ' + fmtDate(w.date) + (w.notes ? ' · ' + esc(w.notes) : '') +
+        weekdayShort(w.date) + ', ' + fmtDate(w.date) +
+        (partialText(w, true) ? ' · +' + partialText(w, true) : '') + (w.notes ? ' · ' + esc(w.notes) : '') +
         '</small></div></div>').join('')
     : '<p class="tiny muted" style="text-align:center;padding:16px">Noch keine Workouts.</p>';
 
@@ -2167,7 +2260,7 @@ function renderDuelChart(people){
   const dates = [...new Set([].concat(...people.map(p => p.list)).map(w => w.date))].sort();
   const serie = list => dates.map(d => {
     const hit = list.filter(w => w.date === d);
-    return hit.length ? Math.max(...hit.map(w => w.rounds)) : null;
+    return hit.length ? round1(Math.max(...hit.map(effRounds))) : null;
   });
   if(charts.chDuel){ charts.chDuel.destroy(); delete charts.chDuel; }
   charts.chDuel = new Chart($('#chDuel'), {
@@ -2388,20 +2481,44 @@ function timerReset(){
   timer.rounds = 0;
   timerRender();
 }
-function timerFinished(){
-  beep();
-  if(navigator.vibrate) navigator.vibrate([250,120,250,120,450]);
+function timerFinished(quiet){
+  if(!quiet){
+    beep();
+    if(navigator.vibrate) navigator.vibrate([250,120,250,120,450]);
+  }
   openModal(
-    '<h3>Zeit um! 🔔</h3><p class="muted tiny" style="margin:0 0 14px">20 Minuten AMRAP geschafft. Wie viele Runden hast du gemacht?</p>' +
-    '<label class="field"><span>Runden</span><input type="number" id="mRounds" step="0.5" min="0" value="' + timer.rounds + '"></label>' +
+    '<h3>' + (quiet ? 'Ergebnis speichern' : 'Zeit um! 🔔') + '</h3>' +
+    '<p class="muted tiny" style="margin:0 0 14px">' +
+      (quiet ? 'Trag ein, was du geschafft hast.' : '20 Minuten AMRAP geschafft. Wie viele Runden hast du gemacht?') + '</p>' +
+    '<label class="field"><span>Volle Runden</span><input type="number" id="mRounds" step="1" min="0" value="' + timer.rounds + '"></label>' +
+    '<div class="partial">' +
+      '<span>Angefangene Runde (optional)</span>' +
+      '<div class="row">' +
+        '<label><small>Pull-Ups</small><input type="number" id="mPull" min="0" max="5" step="1" inputmode="numeric" placeholder="0"></label>' +
+        '<label><small>Push-Ups</small><input type="number" id="mPush" min="0" max="10" step="1" inputmode="numeric" placeholder="0"></label>' +
+        '<label><small>Squats</small><input type="number" id="mSquat" min="0" max="15" step="1" inputmode="numeric" placeholder="0"></label>' +
+      '</div>' +
+      '<p class="hint" id="mHint">Die Wiederholungen der Runde, die beim Gong noch lief.</p>' +
+    '</div>' +
     '<label class="field"><span>Notiz (optional)</span><textarea id="mNotes" placeholder="Wie lief es?"></textarea></label>' +
     '<button class="btn" id="mSave">Workout speichern</button>' +
     '<button class="btn ghost" style="margin-top:8px" id="mCancel">Später</button>',
     () => {
+      const hint = () => {
+        const r = Math.max(0, parseFloat($('#mRounds').value) || 0);
+        const p = readPartial('#mPull', '#mPush', '#mSquat');
+        $('#mHint').textContent = p
+          ? 'Angefangene ' + (round1(r)+1) + '. Runde · zählt als ' + round1(effRounds({ rounds:r, partial:p })) + ' Runden'
+          : 'Die Wiederholungen der Runde, die beim Gong noch lief.';
+      };
+      $('#mRounds').addEventListener('input', hint);
+      bindPartial('#mPull', '#mPush', '#mSquat', hint);
       $('#mSave').addEventListener('click', () => {
-        const r = parseFloat($('#mRounds').value);
-        if(isNaN(r) || r < 0){ toast('Bitte gültige Rundenzahl eingeben'); return; }
-        addWorkout(todayStr(), r, $('#mNotes').value.trim());
+        const r = parseFloat($('#mRounds').value) || 0;
+        const partial = readPartial('#mPull', '#mPush', '#mSquat');
+        if(r < 0){ toast('Bitte gültige Rundenzahl eingeben'); return; }
+        if(!r && !partial){ toast('Bitte Runden oder angefangene Runde eingeben'); return; }
+        addWorkout(todayStr(), r, $('#mNotes').value.trim(), partial);
         closeModal(); timerReset();
       });
       $('#mCancel').addEventListener('click', closeModal);
@@ -2597,26 +2714,29 @@ function beep(){
 }
 
 /* ---------- 6. Workouts, Badges, Toasts, Konfetti ---------- */
-function addWorkout(date, rounds, notes){
+function addWorkout(date, rounds, notes, partial){
   const before = computeStats(allWorkouts()).best;
-  // Pull-Ups/Push-Ups/Squats/Reps werden überall aus `rounds` berechnet und
-  // deshalb bewusst nicht mitgespeichert – das hält den Datensatz klein für die
-  // Geräte-Synchronisation der Library (dort gilt ein Limit pro Übung).
+  // Pull-Ups/Push-Ups/Squats/Reps werden überall aus `rounds` und der
+  // angefangenen Runde berechnet und deshalb bewusst nicht mitgespeichert –
+  // das hält den Datensatz klein für die Geräte-Synchronisation.
   const w = {
     id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
     seasonId: state.currentSeasonId,
     date, rounds, notes: notes || '',
     created: Date.now()
   };
+  const p = partialOf({ partial });
+  if(p) w.partial = p;
   state.workouts.push(w);
   save();
   duelSync();
   renderAll();
   if(ui.view === 'charts') renderCharts();
 
-  const isPr = rounds > before && state.workouts.length > 1;
-  if(isPr){ confetti(); toast('🥇 Neuer persönlicher Rekord: ' + round1(rounds) + ' Runden!', true); }
-  else { toast('✅ Workout gespeichert · ' + nf(rounds*REPS_PER_ROUND) + ' Wiederholungen'); }
+  const eff = effRounds(w);
+  const isPr = eff > before && state.workouts.length > 1;
+  if(isPr){ confetti(); toast('🥇 Neuer persönlicher Rekord: ' + fmtScore(w) + ' Runden!', true); }
+  else { toast('✅ Workout gespeichert · ' + nf(repsOf(w).total) + ' Wiederholungen'); }
   checkBadges();
 }
 
@@ -2625,7 +2745,7 @@ function deleteWorkout(id){
   if(!w) return;
   openModal(
     '<h3>Workout löschen?</h3><p class="muted tiny" style="margin:0 0 16px">' +
-      fmtDate(w.date) + ' · ' + round1(w.rounds) + ' Runden. Das lässt sich nicht rückgängig machen.</p>' +
+      fmtDate(w.date) + ' · ' + fmtScore(w) + ' Runden. Das lässt sich nicht rückgängig machen.</p>' +
     '<button class="btn danger" id="okDel">Löschen</button>' +
     '<button class="btn ghost" style="margin-top:8px" id="noDel">Abbrechen</button>',
     () => {
@@ -2782,12 +2902,15 @@ function exportJson(){
   toast('⬇️ JSON exportiert');
 }
 function exportCsv(){
-  const rows = [['Datum','Season','Runden','PullUps','PushUps','Squats','Wiederholungen','Notiz']];
-  allWorkouts().forEach(w => rows.push([
-    w.date, 'S' + (state.seasons.find(s => s.id === w.seasonId) || {number:'?'}).number,
-    w.rounds, w.rounds*PER_ROUND.pull, w.rounds*PER_ROUND.push, w.rounds*PER_ROUND.squat,
-    w.rounds*REPS_PER_ROUND, '"' + String(w.notes||'').replace(/"/g,'""') + '"'
-  ]));
+  const rows = [['Datum','Season','VolleRunden','RundenGesamt','PullUps','PushUps','Squats','Wiederholungen','AngefangeneRunde','Notiz']];
+  allWorkouts().forEach(w => {
+    const reps = repsOf(w);
+    rows.push([
+      w.date, 'S' + (state.seasons.find(s => s.id === w.seasonId) || {number:'?'}).number,
+      w.rounds, round1(effRounds(w)), reps.pull, reps.push, reps.squat, reps.total,
+      '"' + partialText(w) + '"', '"' + String(w.notes||'').replace(/"/g,'""') + '"'
+    ]);
+  });
   download('tom-holland-challenge_' + todayStr() + '.csv', rows.map(r => r.join(';')).join('\n'), 'text/csv');
   toast('⬇️ CSV exportiert');
 }
@@ -2888,12 +3011,33 @@ function switchView(v){
   if(v === 'charts') renderCharts();
   if(v === 'duel'){ renderDuel(); if(!state.duel) probePick(); }
 }
+/** Liest drei Teilrunden-Felder aus und gibt die angefangene Runde zurück (oder null) */
+function readPartial(pull, push, squat){
+  const v = sel => { const el = $(sel); return el ? parseFloat(el.value) : 0; };
+  return partialOf({ partial:{ pull:v(pull), push:v(push), squat:v(squat) } });
+}
+/** In der AMRAP-Reihenfolge kommen erst Pull-Ups, dann Push-Ups, dann Squats:
+    wer Push-Ups eingibt, hat die Pull-Ups der Runde schon hinter sich. */
+function bindPartial(pull, push, squat, after){
+  const a = $(pull), b = $(push), c = $(squat);
+  const fill = (el, max) => { if(el && !el.value.trim()) el.value = max; };
+  const on = (el, fn) => el && el.addEventListener('input', () => { fn(); if(after) after(); });
+  on(a, () => {});
+  on(b, () => { if(parseFloat(b.value) > 0) fill(a, PER_ROUND.pull); });
+  on(c, () => { if(parseFloat(c.value) > 0){ fill(a, PER_ROUND.pull); fill(b, PER_ROUND.push); } });
+}
 function updateCalc(){
-  const r = parseFloat($('#inRounds').value) || 0;
-  $('#cPull').textContent = nf(r*PER_ROUND.pull);
-  $('#cPush').textContent = nf(r*PER_ROUND.push);
-  $('#cSquat').textContent = nf(r*PER_ROUND.squat);
-  $('#cTotal').textContent = nf(r*REPS_PER_ROUND);
+  const r = Math.max(0, parseFloat($('#inRounds').value) || 0);
+  const p = readPartial('#inPull', '#inPush', '#inSquat');
+  const w = { rounds:r, partial:p };
+  const reps = repsOf(w);
+  $('#cPull').textContent  = nf(reps.pull);
+  $('#cPush').textContent  = nf(reps.push);
+  $('#cSquat').textContent = nf(reps.squat);
+  $('#cTotal').textContent = nf(reps.total);
+  $('#partialHint').textContent = p
+    ? 'Angefangene ' + (round1(r)+1) + '. Runde: ' + partialText(w) + ' · zählt als ' + round1(effRounds(w)) + ' Runden'
+    : 'Was du nach der letzten vollen Runde noch geschafft hast – z. B. 5 Pull-Ups und 3 Push-Ups.';
 }
 function randomQuote(){ $('#quote').textContent = '„' + QUOTES[(Math.random()*QUOTES.length)|0] + '"'; }
 
@@ -2932,13 +3076,24 @@ function init(){
   });
 
   // Workout-Formular
+  // Chrome verstellt ein fokussiertes Zahlenfeld, wenn man mit dem Mausrad
+  // darüber scrollt – das Feld beim Scrollen abwählen, damit nichts verrutscht.
+  document.addEventListener('wheel', () => {
+    const el = document.activeElement;
+    if(el && el.tagName === 'INPUT' && el.type === 'number') el.blur();
+  }, { passive:true });
+
   $('#inRounds').addEventListener('input', updateCalc);
+  bindPartial('#inPull', '#inPush', '#inSquat', updateCalc);
   $('#saveWorkout').addEventListener('click', () => {
     const date = $('#inDate').value || todayStr();
-    const rounds = parseFloat($('#inRounds').value);
-    if(isNaN(rounds) || rounds < 0){ toast('⚠️ Bitte Rundenzahl eingeben'); return; }
-    addWorkout(date, rounds, $('#inNotes').value.trim());
+    const rounds = parseFloat($('#inRounds').value) || 0;
+    const partial = readPartial('#inPull', '#inPush', '#inSquat');
+    if(rounds < 0){ toast('⚠️ Bitte Rundenzahl eingeben'); return; }
+    if(!rounds && !partial){ toast('⚠️ Bitte Runden oder angefangene Runde eingeben'); return; }
+    addWorkout(date, rounds, $('#inNotes').value.trim(), partial);
     $('#inRounds').value = ''; $('#inNotes').value = ''; $('#inDate').value = todayStr();
+    $('#inPull').value = ''; $('#inPush').value = ''; $('#inSquat').value = '';
     updateCalc();
   });
   $('#searchNotes').addEventListener('input', e => { ui.search = e.target.value; renderLogList(); });
@@ -2963,11 +3118,9 @@ function init(){
   $('#tReset').addEventListener('click', timerReset);
   $('#rPlus').addEventListener('click', () => { timer.rounds++; timerRender(); if(navigator.vibrate) navigator.vibrate(18); });
   $('#rMinus').addEventListener('click', () => { timer.rounds = Math.max(0, timer.rounds-1); timerRender(); });
-  $('#tSave').addEventListener('click', () => {
-    if(timer.rounds <= 0){ toast('Erst Runden zählen oder im Tab „Training" erfassen'); return; }
-    addWorkout(todayStr(), timer.rounds, '');
-    timerReset();
-  });
+  // Öffnet denselben Dialog wie der Gong – so lässt sich auch hier die
+  // angefangene Runde eintragen.
+  $('#tSave').addEventListener('click', () => timerFinished(true));
 
   // Kalender
   $('#calPrev').addEventListener('click', () => { ui.calMonth.setMonth(ui.calMonth.getMonth()-1); renderCalendar(); });

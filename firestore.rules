@@ -2,8 +2,8 @@ rules_version = '2';
 
 // Regeln für den Duell-Teil des Tom-Holland-Trackers.
 //
-// Datenmodell: pro Duell gibt es bis zu vier Dokumente – eines je Athlet.
-//   duels/{code}/athletes/a  …  duels/{code}/athletes/d
+// Datenmodell: pro Duell gibt es bis zu sechs Dokumente – eines je Athlet.
+//   duels/{code}/athletes/a  …  duels/{code}/athletes/f
 // Darin steht der komplette Workout-Stand dieses Athleten. Alle Geräte
 // desselben Athleten schreiben in dasselbe Dokument und führen ihre
 // Stände beim Laden zusammen.
@@ -47,11 +47,11 @@ service cloud.firestore {
       // gemeinsame write-Regel mit Feldprüfung würde jedes delete abweisen.
       allow delete: if request.auth != null
                     && code.size() >= 4 && code.size() <= 12
-                    && slot in ['a', 'b', 'c', 'd'];
+                    && slot in ['a', 'b', 'c', 'd', 'e', 'f'];
 
       allow create, update: if request.auth != null
                    && code.size() >= 4 && code.size() <= 12
-                   && slot in ['a', 'b', 'c', 'd']
+                   && slot in ['a', 'b', 'c', 'd', 'e', 'f']
                    && request.resource.data.keys().hasOnly(['name','workouts','removed','updated'])
                    && request.resource.data.name is string
                    && request.resource.data.name.size() <= 18

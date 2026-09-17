@@ -3,7 +3,7 @@
 Der vollständige Tracker für die **Tom Holland Challenge** (20 Min AMRAP: 5 Pull-Ups,
 10 Push-Ups, 15 Air Squats pro Runde) – Dashboard, Workout-Erfassung, Aufwärm-Assistent,
 AMRAP-Timer, Charts, Kalender, Rekorde, Abzeichen, Seasons – erweitert um einen
-**Duell-Modus**, in dem sich bis zu vier Athleten live vergleichen.
+**Duell-Modus**, in dem sich bis zu sechs Athleten live vergleichen.
 
 Eine einzelne `index.html`, kein Build. Gehostet auf GitHub Pages, das Duell läuft über
 Firebase Firestore.
@@ -38,7 +38,7 @@ Danach committen; GitHub Pages baut automatisch neu.
 ## Duell benutzen
 
 Im Tab **⚔️ Duell**: *Neuen Code erzeugen* → Athlet A wählen → beitreten. Den Code den
-Kumpels schicken; bis zu vier Athleten (A–D) passen in ein Duell. Die bisherigen Workouts
+Kumpels schicken; bis zu sechs Athleten (A–F) passen in ein Duell. Die bisherigen Workouts
 werden automatisch mitgenommen.
 
 Die Athleten-Plätze sind gesperrt, bis ein Code eingegeben ist. Danach zeigt die Seite, welche
@@ -51,6 +51,20 @@ Bei zwei Athleten erscheint oben das klassische VS, ab drei eine Rangliste nach 
 Direktvergleich, Weg zu Tom Holland, Verlauf und letzte Workouts zeigen alle Teilnehmer.
 Über *Einladung teilen* gibt es einen Link mit Code (`…/index.html#THXXXX`), der das Feld
 beim Gegner schon ausfüllt.
+
+## Angefangene Runden
+
+Eine Runde sind 5 Pull-Ups, 10 Push-Ups und 15 Air Squats – und wenn der Gong kommt, ist man
+selten genau am Rundenende. Beim Erfassen stehen deshalb neben den **vollen Runden** drei
+kleine Felder für die **angefangene Runde**: was nach der letzten vollen Runde noch geschafft
+wurde (z. B. 5 Pull-Ups und 3 Push-Ups in der 11. Runde). Derselbe Block steckt im Dialog,
+der nach dem AMRAP-Timer aufgeht.
+
+Notiert wird das wie im CrossFit als `10+8` – zehn volle Runden plus acht Wiederholungen.
+Gerechnet wird damit überall: Wiederholungen zählen exakt, und für Rekord, Schnitt, Charts
+und Duell zählt eine angefangene Runde anteilig (8 von 30 Wiederholungen = 0.27 Runden).
+Ältere Einträge mit halben Runden (`11.5`) bleiben gültig und werden unverändert
+weitergerechnet.
 
 ## Konto: ein Code für die ganze App
 
@@ -95,13 +109,15 @@ Die Seite verhindert das beim Beitreten (siehe oben).
 ## Datenmodell
 
 ```
-athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s}], removed:[id],
+athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s,p}], removed:[id],
                                 seasons, currentSeasonId, badges, settings, theme }
-duels/{duellcode}/athletes/{a|b|c|d}
-                              { name, workouts:[{i,d,r,n,c,s}], removed:[id], updated }
+duels/{duellcode}/athletes/{a|b|c|d|e|f}
+                              { name, workouts:[{i,d,r,n,c,s,p}], removed:[id], updated }
 ```
 
-`i` = Workout-ID, `d` = Datum, `r` = Runden, `n` = Notiz, `c` = Erstellzeit, `s` = Season-ID.
+`i` = Workout-ID, `d` = Datum, `r` = volle Runden, `n` = Notiz, `c` = Erstellzeit,
+`s` = Season-ID, `p` = angefangene Runde als `[Pull-Ups, Push-Ups, Squats]` (fehlt, wenn
+die Runde voll ausging).
 
 ## Sicherheit
 
