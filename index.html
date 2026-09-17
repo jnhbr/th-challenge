@@ -26,6 +26,7 @@
    1. Design-Tokens (Dark + Light)
    ============================================================ */
 :root{
+  --tabbar:128px;             /* Höhe der Tab-Leiste: zwei Reihen auf dem Handy */
   --bg:#0B0D10;
   --bg-2:#0F1319;
   --surface:#14181F;
@@ -66,7 +67,7 @@ body{
   color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   font-size:16px;line-height:1.45;
-  padding-bottom:calc(92px + env(safe-area-inset-bottom));
+  padding-bottom:calc(var(--tabbar) + 20px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
   transition:background .3s ease,color .3s ease;
 }
@@ -110,13 +111,18 @@ nav.tabs{
   padding:6px 6px calc(6px + env(safe-area-inset-bottom));
 }
 html[data-theme="light"] nav.tabs{background:rgba(255,255,255,.9)}
-.tabs-inner{display:flex;gap:2px;max-width:1120px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
-.tabs-inner::-webkit-scrollbar{display:none}
+/* Alle acht Tabs auf einen Blick: auf dem Handy zwei Reihen à vier,
+   ab 640px eine Reihe. So muss nie seitwärts gewischt werden. */
+.tabs-inner{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;max-width:1120px;margin:0 auto}
+@media(min-width:640px){
+  :root{--tabbar:72px}        /* ab Tablet-Breite passen alle acht in eine Reihe */
+  .tabs-inner{grid-template-columns:repeat(8,1fr)}
+}
 .tab{
-  flex:1 0 auto;min-width:64px;border:0;background:transparent;color:var(--muted);
+  min-width:0;border:0;background:transparent;color:var(--muted);
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:8px 6px;border-radius:14px;font-size:10.5px;font-weight:700;letter-spacing:.01em;
-  transition:color .18s ease,background .18s ease
+  padding:8px 4px;border-radius:14px;font-size:10.5px;font-weight:700;letter-spacing:.01em;
+  white-space:nowrap;transition:color .18s ease,background .18s ease
 }
 .tab .ic{font-size:19px;line-height:1}
 .tab.active{color:var(--text);background:var(--surface)}
@@ -280,6 +286,7 @@ textarea{min-height:72px;resize:vertical}
 .entry .meta .d{font-weight:800;font-size:14px}
 .entry .meta .r{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .entry .note{font-size:12px;color:var(--muted);margin-top:3px;font-style:italic}
+.entry .acts{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
 .entry .del{border:0;background:transparent;color:var(--muted);font-size:17px;padding:6px}
 
 /* Badges */
@@ -319,7 +326,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .modal h3{font-size:20px;font-weight:900;margin-bottom:6px}
 
 /* Toast */
-#toasts{position:fixed;left:0;right:0;bottom:calc(100px + env(safe-area-inset-bottom));z-index:120;
+#toasts{position:fixed;left:0;right:0;bottom:calc(var(--tabbar) + 28px + env(safe-area-inset-bottom));z-index:120;
   display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 16px}
 .toast{
   background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 15px;
@@ -1060,6 +1067,14 @@ function partialText(w, short){
   if(p.squat) parts.push(p.squat + ' Squats');
   return parts.join(' · ');
 }
+/** Wer 5/10/15 in die angefangene Runde tippt, hat sie in Wahrheit voll
+    geschafft – dann lieber eine Runde mehr als ein „15+30". */
+function normalizeEntry(rounds, partial){
+  const p = partialOf({ partial });
+  return (p && p.pull === PER_ROUND.pull && p.push === PER_ROUND.push && p.squat === PER_ROUND.squat)
+    ? { rounds: rounds + 1, partial: null }
+    : { rounds, partial: p };
+}
 /** Schlüssel für die Dubletten-Erkennung beim Zusammenführen zweier Geräte */
 const dayKey = w => w.date + '|' + round1(effRounds(w));
 /** Kompaktform eines Workouts für Konto- und Duell-Übertragung.
@@ -1068,11 +1083,29 @@ function compactWorkout(w){
   const o = { i:w.id, d:w.date, r:w.rounds, n:(w.notes||'').slice(0,200), c:w.created||0, s:w.seasonId };
   const q = partialOf(w);
   if(q) o.p = [q.pull, q.push, q.squat];
+  if(w.updated) o.u = w.updated;   // nachträglich bearbeitet – siehe applyEdits
   return o;
 }
 /** Angefangene Runde aus der Kompaktform zurücklesen */
 function payloadPartial(w){
   return Array.isArray(w.p) ? partialOf({ partial:{ pull:w.p[0], push:w.p[1], squat:w.p[2] } }) : null;
+}
+/** Nachträglich bearbeitete Workouts übernehmen: gleiche ID, aber neuerer
+    Stand als der eigene – dann gewinnen die Felder des anderen Geräts.
+    Ohne das würde eine Korrektur dort hängen bleiben, wo sie gemacht wurde,
+    weil beim Zusammenführen sonst nur unbekannte IDs dazukommen. */
+function applyEdits(list, dead){
+  const byId = new Map(state.workouts.map(w => [w.id, w]));
+  let n = 0;
+  list.forEach(inc => {
+    const loc = byId.get(inc.id);
+    if(!loc || dead.has(inc.id)) return;
+    if((inc.updated || 0) <= (loc.updated || loc.created || 0)) return;
+    loc.date = inc.date; loc.rounds = inc.rounds; loc.notes = inc.notes; loc.updated = inc.updated;
+    if(inc.partial) loc.partial = inc.partial; else delete loc.partial;
+    n++;
+  });
+  return n;
 }
 
 /** ISO-Kalenderwoche als sortierbarer Schlüssel, z. B. "2026-KW38" */
@@ -1446,10 +1479,14 @@ function renderLogList(){
         (pt ? '<div class="p">+ ' + (round1(w.rounds)+1) + '. Runde: ' + pt + '</div>' : '') +
         (w.notes ? '<div class="note">„' + esc(w.notes) + '"</div>' : '') +
       '</div>' +
-      '<button class="del" data-del="' + w.id + '" title="Löschen">🗑</button>' +
+      '<div class="acts">' +
+        '<button class="del" data-edit="' + w.id + '" title="Bearbeiten">✏️</button>' +
+        '<button class="del" data-del="' + w.id + '" title="Löschen">🗑</button>' +
+      '</div>' +
     '</div>';
   }).join('');
 
+  $$('#logList [data-edit]').forEach(b => b.addEventListener('click', () => editWorkout(b.dataset.edit)));
   $$('#logList [data-del]').forEach(b => b.addEventListener('click', () => deleteWorkout(b.dataset.del)));
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1763,10 +1800,15 @@ function accountMerge(doc){
   const sameDay = new Set(state.workouts.map(dayKey));
   const seasonIds = new Set(state.seasons.map(x => x.id));
 
-  const incoming = (doc.workouts || [])
+  const remote = (doc.workouts || [])
     .filter(w => w && typeof w.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.d))
     .map(w => ({ id:w.i || ('w_'+(w.c||Date.now())+'_x'), date:w.d, rounds:+w.r||0,
-                 notes:w.n||'', created:w.c||0, seasonId:w.s, partial:payloadPartial(w) }))
+                 notes:w.n||'', created:w.c||0, seasonId:w.s, partial:payloadPartial(w),
+                 updated:+w.u || 0 }));
+
+  if(applyEdits(remote, dead)) changed = true;
+
+  const incoming = remote
     .filter(w => !known.has(w.id) && !dead.has(w.id) && !sameDay.has(dayKey(w)));
 
   const drop = state.workouts.filter(w => dead.has(w.id));
@@ -1991,7 +2033,7 @@ function fromPayload(list){
   return (Array.isArray(list) ? list : []).map(w => ({
     id: w.i || ('w_' + (w.c || Date.now()) + '_rem'),
     date: w.d, rounds: +w.r || 0, notes: w.n || '', created: w.c || 0, seasonId: w.s,
-    partial: payloadPartial(w)
+    partial: payloadPartial(w), updated: +w.u || 0
   })).filter(w => typeof w.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.date));
 }
 const listOf = doc => doc ? fromPayload(doc.workouts).sort(byDate) : [];
@@ -2080,7 +2122,10 @@ function mergeOwn(doc){
   // gleicher Rundenzahl praktisch immer derselbe Eintrag.
   const sameDay = new Set(state.workouts.map(dayKey));
 
-  const incoming = fromPayload(doc.workouts)
+  const remote = fromPayload(doc.workouts);
+  const edits = applyEdits(remote, dead);
+
+  const incoming = remote
     .filter(w => !known.has(w.id) && !dead.has(w.id))
     .filter(w => !sameDay.has(dayKey(w)))
     .map(w => Object.assign({}, w, {
@@ -2088,7 +2133,7 @@ function mergeOwn(doc){
     }));
   const removedLocally = state.workouts.filter(w => dead.has(w.id));
 
-  if(!incoming.length && !removedLocally.length && !newTomb.length) return;
+  if(!incoming.length && !removedLocally.length && !newTomb.length && !edits) return;
 
   state.workouts = state.workouts.filter(w => !dead.has(w.id)).concat(incoming);
   save();
@@ -2097,6 +2142,8 @@ function mergeOwn(doc){
   if(incoming.length){
     toast('🔄 ' + incoming.length + ' Workout' + (incoming.length === 1 ? '' : 's') + ' von deinem anderen Gerät übernommen');
     duelPush();   // eigener Stand kann jetzt mehr enthalten als die Cloud
+  }else if(edits){
+    toast('🔄 ' + edits + ' bearbeitetes Workout' + (edits === 1 ? '' : 'e') + ' von deinem anderen Gerät übernommen');
   }
 }
 
@@ -2716,6 +2763,8 @@ function beep(){
 /* ---------- 6. Workouts, Badges, Toasts, Konfetti ---------- */
 function addWorkout(date, rounds, notes, partial){
   const before = computeStats(allWorkouts()).best;
+  const norm = normalizeEntry(rounds, partial);
+  rounds = norm.rounds; partial = norm.partial;
   // Pull-Ups/Push-Ups/Squats/Reps werden überall aus `rounds` und der
   // angefangenen Runde berechnet und deshalb bewusst nicht mitgespeichert –
   // das hält den Datensatz klein für die Geräte-Synchronisation.
@@ -2738,6 +2787,66 @@ function addWorkout(date, rounds, notes, partial){
   if(isPr){ confetti(); toast('🥇 Neuer persönlicher Rekord: ' + fmtScore(w) + ' Runden!', true); }
   else { toast('✅ Workout gespeichert · ' + nf(repsOf(w).total) + ' Wiederholungen'); }
   checkBadges();
+}
+
+/** Ein bereits erfasstes Workout nachträglich korrigieren.
+    ID, Season und Erstellzeit bleiben, damit der Eintrag auf allen Geräten
+    derselbe bleibt; `updated` sorgt dafür, dass die Korrektur gewinnt. */
+function editWorkout(id){
+  const w = state.workouts.find(x => x.id === id);
+  if(!w) return;
+  const p = partialOf(w) || { pull:0, push:0, squat:0 };
+  const val = n => n ? String(n) : '';
+  openModal(
+    '<h3>Workout bearbeiten</h3>' +
+    '<p class="muted tiny" style="margin:0 0 14px">Erfasst am ' + fmtDate(w.date) + ' · ' + fmtScore(w) + ' Runden</p>' +
+    '<label class="field"><span>Datum</span><input type="date" id="edDate" value="' + w.date + '"></label>' +
+    '<label class="field"><span>Volle Runden</span>' +
+      '<input type="number" id="edRounds" min="0" max="80" step="1" inputmode="numeric" value="' + round1(w.rounds) + '"></label>' +
+    '<div class="partial">' +
+      '<span>Angefangene Runde (optional)</span>' +
+      '<div class="row">' +
+        '<label><small>Pull-Ups</small><input type="number" id="edPull" min="0" max="5" step="1" inputmode="numeric" placeholder="0" value="' + val(p.pull) + '"></label>' +
+        '<label><small>Push-Ups</small><input type="number" id="edPush" min="0" max="10" step="1" inputmode="numeric" placeholder="0" value="' + val(p.push) + '"></label>' +
+        '<label><small>Squats</small><input type="number" id="edSquat" min="0" max="15" step="1" inputmode="numeric" placeholder="0" value="' + val(p.squat) + '"></label>' +
+      '</div>' +
+      '<p class="hint" id="edHint"></p>' +
+    '</div>' +
+    '<label class="field"><span>Notiz (optional)</span><textarea id="edNotes">' + esc(w.notes || '') + '</textarea></label>' +
+    '<button class="btn" id="edSave">Änderungen speichern</button>' +
+    '<button class="btn ghost" style="margin-top:8px" id="edCancel">Abbrechen</button>',
+    () => {
+      const hint = () => {
+        const r = Math.max(0, parseFloat($('#edRounds').value) || 0);
+        const q = readPartial('#edPull', '#edPush', '#edSquat');
+        $('#edHint').textContent = q
+          ? 'Angefangene ' + (round1(r)+1) + '. Runde: ' + partialText({ rounds:r, partial:q }) +
+            ' · zählt als ' + round1(effRounds({ rounds:r, partial:q })) + ' Runden'
+          : 'Was nach der letzten vollen Runde noch geschafft wurde – leer lassen, wenn die Runde voll ausging.';
+      };
+      hint();
+      $('#edRounds').addEventListener('input', hint);
+      bindPartial('#edPull', '#edPush', '#edSquat', hint);
+      $('#edSave').addEventListener('click', () => {
+        const date = $('#edDate').value || w.date;
+        const rounds = parseFloat($('#edRounds').value) || 0;
+        const partial = readPartial('#edPull', '#edPush', '#edSquat');
+        if(rounds < 0){ toast('⚠️ Bitte gültige Rundenzahl eingeben'); return; }
+        if(!rounds && !partial){ toast('⚠️ Bitte Runden oder angefangene Runde eingeben'); return; }
+        const norm = normalizeEntry(rounds, partial);
+        w.date = date;
+        w.rounds = norm.rounds;
+        w.notes = $('#edNotes').value.trim();
+        if(norm.partial) w.partial = norm.partial; else delete w.partial;
+        w.updated = Date.now();
+        save(); duelSync(); renderAll(); if(ui.view === 'charts') renderCharts();
+        checkBadges();
+        closeModal();
+        toast('✏️ Workout angepasst · ' + fmtScore(w) + ' Runden');
+      });
+      $('#edCancel').addEventListener('click', closeModal);
+    }
+  );
 }
 
 function deleteWorkout(id){

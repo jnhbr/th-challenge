@@ -66,6 +66,17 @@ und Duell zählt eine angefangene Runde anteilig (8 von 30 Wiederholungen = 0.27
 Ältere Einträge mit halben Runden (`11.5`) bleiben gültig und werden unverändert
 weitergerechnet.
 
+## Workouts nachträglich korrigieren
+
+Jeder Eintrag im Verlauf hat neben dem Papierkorb einen Stift: der öffnet denselben
+Dialog wie beim Erfassen, nur mit den gespeicherten Werten – Datum, volle Runden,
+angefangene Runde und Notiz lassen sich ändern. ID, Season und Erstellzeit bleiben,
+damit es derselbe Eintrag bleibt.
+
+Eine Korrektur trägt einen Zeitstempel (`u`), und beim Zusammenführen gewinnt der
+neuere Stand derselben ID. Ohne das bliebe eine Korrektur auf dem Gerät hängen, auf
+dem sie gemacht wurde, weil beim Abgleich sonst nur unbekannte IDs dazukommen.
+
 ## Konto: ein Code für die ganze App
 
 Beim ersten Öffnen fragt die Seite nach einem **Zugangscode** – selbst ausgedacht (mindestens
@@ -79,7 +90,8 @@ Zusammengeführt wird so:
 
 - **Workouts** – Vereinigung über die Workout-ID. Gelöschte bleiben gelöscht (Liste gelöschter
   IDs). Gleiches Datum bei gleicher Rundenzahl gilt als derselbe Eintrag, damit ein versehentlich
-  doppelt erfasstes Training nicht zweimal erscheint.
+  doppelt erfasstes Training nicht zweimal erscheint. Bei gleicher ID gewinnt die neuere
+  Korrektur (siehe oben).
 - **Abzeichen** – Vereinigung, das frühere Freischaltdatum gewinnt.
 - **Seasons** – fehlende werden ergänzt.
 - **Einstellungen, aktuelle Season, Theme** – der zuletzt gespeicherte Stand gewinnt.
@@ -109,15 +121,16 @@ Die Seite verhindert das beim Beitreten (siehe oben).
 ## Datenmodell
 
 ```
-athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s,p}], removed:[id],
+athletes/{zugangscode}        { name, updated, workouts:[{i,d,r,n,c,s,p,u}], removed:[id],
                                 seasons, currentSeasonId, badges, settings, theme }
 duels/{duellcode}/athletes/{a|b|c|d|e|f}
-                              { name, workouts:[{i,d,r,n,c,s,p}], removed:[id], updated }
+                              { name, workouts:[{i,d,r,n,c,s,p,u}], removed:[id], updated }
 ```
 
 `i` = Workout-ID, `d` = Datum, `r` = volle Runden, `n` = Notiz, `c` = Erstellzeit,
 `s` = Season-ID, `p` = angefangene Runde als `[Pull-Ups, Push-Ups, Squats]` (fehlt, wenn
-die Runde voll ausging).
+die Runde voll ausging), `u` = Zeitpunkt der letzten Korrektur (fehlt, solange nie
+bearbeitet wurde).
 
 ## Sicherheit
 
